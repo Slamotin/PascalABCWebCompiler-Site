@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>Pascal WEB Compiler Prototype</title>
+	<script language="Javascript" type="text/javascript" src="../edit_area/edit_area_full.js"></script>
+	<script language="Javascript" type="text/javascript">
+		// initialisation
+		editAreaLoader.init({
+			id: "example_1"	// id of the textarea to transform		
+			,start_highlight: true	// if start with highlight
+			,allow_resize: "both"
+			,allow_toggle: true
+			,word_wrap: true
+			,language: "ru"
+			,syntax: "pas"				
+			,toolbar: "search, go_to_line, |, undo, redo, |, select_font, |, syntax_selection, |, change_smooth_selection, highlight, reset_highlight, |, help"
+			,EA_load_callback: "editAreaLoaded"
+			,show_line_colors: true
+			,font_size: "12"
+			,font_family: "verdana, monospace"
+			,allow_resize: "y"
+			,load_callback: "my_load"
+			,save_callback: "my_save"
+			,plugins: "charmap"
+			,charmap_default: "arrows"
+			,min_height: 350
+		});
+		
+		// callback functions
+		function my_save(id, content){
+			alert("Here is the content of the EditArea '"+ id +"' as received by the save callback function:\n"+content);
+		}
+		
+		function my_load(id){
+			editAreaLoader.setValue(id, "The content is loaded from the load_callback function into EditArea");
+		}
+		
+		function test_setSelectionRange(id){
+			editAreaLoader.setSelectionRange(id, 100, 150);
+		}
+		
+		function test_getSelectionRange(id){
+			var sel =editAreaLoader.getSelectionRange(id);
+			alert("start: "+sel["start"]+"\nend: "+sel["end"]); 
+		}
+		
+		function test_setSelectedText(id){
+			text= "[REPLACED SELECTION]"; 
+			editAreaLoader.setSelectedText(id, text);
+		}
+		
+		function test_getSelectedText(id){
+			alert(editAreaLoader.getSelectedText(id)); 
+		}
+		
+		function editAreaLoaded(id){
+			if(id=="example_2")
+			{
+				open_file1();
+				open_file2();
+			}
+		}
+		
+		
+		function toogle_editable(id)
+		{
+			editAreaLoader.execCommand(id, 'set_editable', !editAreaLoader.execCommand(id, 'is_editable'));
+		}
+	
+	</script>
+	
+</head>
+<body>
+<h2>Pascal WEB Compiler</h2>
+
+<form action='' method='post'>
+	<fieldset>
+		<legend>Code Area</legend>
+		<textarea id="example_1" style="height: 350px; width: 100%;" name="test_1">
+//Simple example
+var a,b,c;
+begin
+	a=2;
+	b=3;
+	c=4;
+	writeln(sqr(2)+3*4);
+end;
+		</textarea>
+		<p>Custom controls:<br />
+			<input type='button' onclick='alert(editAreaLoader.getValue("example_1"));' value='get value' />
+			<input type='button' onclick='editAreaLoader.setValue("example_1", "new_value");' value='set value' />
+			<input type='button' onclick='test_getSelectionRange("example_1");' value='getSelectionRange' />
+			<input type='button' onclick='test_setSelectionRange("example_1");' value='setSelectionRange' />
+			<input type='button' onclick='test_getSelectedText("example_1");' value='getSelectedText' />
+			<input type='button' onclick='test_setSelectedText("example_1");' value='setSelectedText' />
+			<input type='button' onclick='editAreaLoader.insertTags("example_1", "[OPEN]", "[CLOSE]");' value='insertTags' />
+			<input type='button' onclick='toogle_editable("example_1");' value='Toggle readonly mode' />
+		</p>
+
+    <p>
+	<input type="button" onclick='sendCode("example_1");' id="submit" value="Отправить">
+    </p>
+
+<!-- div с сообщениями -->
+<div id="messages"></div>
+	</fieldset>
+	
+</form>
+</body>
+<script>
+	const socket = new WebSocket("ws://192.168.88.12:9000");
+	var form = document.forms['form'];
+	socket.onopen = function () {
+	    console.log('подключился');
+	};
+	socket.onmessage = function (message) {
+	    console.log('Message: %s', message.data);
+	};
+
+	function wsSendEcho(value) {
+	    socket.send(JSON.stringify({action: 'ECHO', data: '123'}));
+	}
+
+	function wsSendPing() {
+	    socket.send(JSON.stringify({action: 'PING'}));
+	}
+
+	socket.onclose = function(event) {
+	    if (event.wasClean) {
+		    alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+	    } else {
+		// например, сервер убил процесс или сеть недоступна
+		// обычно в этом случае event.code 1006
+		alert('[close] Соединение прервано');
+	    }
+	};
+
+	socket.onerror = function(error) {
+	    alert(`[error] ${error.message}`);
+	};	
+
+	// отправка сообщения из формы
+	window.onload = function() {
+	    document.getElementById('submit').onclick = function sendCode(event){
+	        let outgoingMessage = this.editAreaLoader.getValue("example_1");
+	        socket.send(JSON.stringify({action: 'CODE', data: outgoingMessage}));
+		alert('Message send');
+	        return false;
+	    };
+	};
+
+	socket.onmessage = function(event) {
+	  let message = event.data;
+	  let messageElem = document.createElement('div');
+	  messageElem.textContent = message;
+	  document.getElementById('messages').prepend(messageElem);
+	};
+</script>
+</html>
