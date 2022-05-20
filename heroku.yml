@@ -1,0 +1,13 @@
+setup:
+    addons:
+    -   plan: heroku-community/nginx
+        as: nginx
+build:
+  docker:
+    web: Dockerfile
+  config:
+    NGINX_WORKERS: 8
+    NGINX_WORKER_CONNECTIONS: 2048
+    PORT: 8080
+run:
+    worker: node ./html/app1.js

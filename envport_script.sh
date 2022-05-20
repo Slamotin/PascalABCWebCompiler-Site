@@ -1,0 +1,1 @@
+sed -i -e 's/$PORT/'"$PORT"'/g' /etc/nginx/sites-enabled/PascalWebCompiler.conf && nginx -g 'daemon off;'
