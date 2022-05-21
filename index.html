@@ -209,7 +209,7 @@ end.
     };
     var socket1 = [];
     async function testConnections(iterator) {
-        socket1[iterator] = new WebSocket("ws://nodejs-webcompiler-server.herokuapp.com:80");//, {perMessageDeflate: false});
+        socket1[iterator] = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:80");//, {perMessageDeflate: false});
         socket1[iterator].onopen = function () {
             const start = Date.now();
             let outgoingMessage = editAreaLoader.getValue("example_1");
