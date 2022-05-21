@@ -125,7 +125,7 @@ end.
     </form>
 </body>
 <script>
-    const socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:80");//, {perMessageDeflate: false});
+    const socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
     var form = document.forms['form'];
     let auth_hash = getCookie('hash');
     socket.onopen = function () {
@@ -209,7 +209,7 @@ end.
     };
     var socket1 = [];
     async function testConnections(iterator) {
-        socket1[iterator] = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:80");//, {perMessageDeflate: false});
+        socket1[iterator] = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
         socket1[iterator].onopen = function () {
             const start = Date.now();
             let outgoingMessage = editAreaLoader.getValue("example_1");
