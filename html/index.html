@@ -125,13 +125,29 @@ end.
     </form>
 </body>
 <script>
-    const socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
+    let socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
     var form = document.forms['form'];
     let auth_hash = getCookie('hash');
     socket.onopen = function () {
         console.log('подключился');
     };
 
+    socket.onclose = function (event) {
+        if (event.wasClean) {
+            //alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+            changediv('#compiler_messages', 'Соединение закрыто чисто')
+        } else {
+            // например, сервер убил процесс или сеть недоступна
+            // обычно в этом случае event.code 1006
+            //alert('[close] Соединение прервано');
+            changediv('#compiler_messages', 'Соединение с сервером оборвано')
+        }
+    };
+
+    socket.onerror = function (error) {
+        alert(`[error] ${error.message}`);
+    };
+    
     function getCookie(name) {
         let matches = document.cookie.match(new RegExp(
             "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
@@ -164,10 +180,21 @@ end.
     }
 
     function auth() {
+        if (socket.readyState === 2 || socket.readyState === 3) {
+            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
+            socket.onopen = function () {
+                socket.send(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
+            }
+        }
         socket.send(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
     };
     function signup() {
         //if 
+        if (socket.readyState === 2 || socket.readyState === 3) {
+            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
+            socket.onopen = function () {
+                socket.send(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));            }
+        }
         socket.send(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));
     };
     function changediv(elem, message) {
@@ -183,26 +210,19 @@ end.
         socket.send(JSON.stringify({ action: 'PING' }));
     };
 
-    socket.onclose = function (event) {
-        if (event.wasClean) {
-            alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
-        } else {
-            // например, сервер убил процесс или сеть недоступна
-            // обычно в этом случае event.code 1006
-            alert('[close] Соединение прервано');
-        }
-    };
-
-    socket.onerror = function (error) {
-        alert(`[error] ${error.message}`);
-    };
-
     // отправка сообщения из формы
     function sendCode(event) {
         changediv('#compiler_messages', 'Wait...');
         let outgoingMessage = this.editAreaLoader.getValue("example_1");
-        //let filename = document.querySelector();
+ 
+        if (socket.readyState === 2 || socket.readyState === 3) {
+            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
+            socket.onopen = function () {
+                socket.send(JSON.stringify({ action: 'CODE', filename: "", data: outgoingMessage, hash: getCookie('hash') }));
+            }
+        }
         socket.send(JSON.stringify({ action: 'CODE', filename: 'filename', data: outgoingMessage, hash: getCookie('hash') }));
+        //let filename = document.querySelector();
         //alert('Message send');
         //alert(outgoingMessage);
         return;
