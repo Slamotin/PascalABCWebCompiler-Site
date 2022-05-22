@@ -221,7 +221,9 @@ end.
                 socket.send(JSON.stringify({ action: 'CODE', filename: "", data: outgoingMessage, hash: getCookie('hash') }));
             }
         }
-        socket.send(JSON.stringify({ action: 'CODE', filename: 'filename', data: outgoingMessage, hash: getCookie('hash') }));
+        if (socket.readyState === 1) {
+            socket.send(JSON.stringify({ action: 'CODE', filename: '', data: outgoingMessage, hash: getCookie('hash') }));
+        }
         //let filename = document.querySelector();
         //alert('Message send');
         //alert(outgoingMessage);
