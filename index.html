@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Pascal WEB Compiler Prototype</title>
@@ -15,26 +15,35 @@
             , word_wrap: true
             , language: "ru"
             , syntax: "pas"
-            , toolbar: "search, go_to_line, |, undo, redo, |, select_font, |, change_smooth_selection, highlight, reset_highlight, |, help"
+            , toolbar: "new_document, save, load, |, search, go_to_line, |, undo, redo, |, select_font, |, change_smooth_selection, highlight, reset_highlight, |, help"
+            , is_multi_files: true
             , EA_load_callback: "editAreaLoaded"
             , show_line_colors: true
             , font_size: "12"
             , font_family: "verdana, monospace"
-            , allow_resize: "y"
             , load_callback: "my_load"
             , save_callback: "my_save"
+            , change_callback: "my_change_callback"
             , plugins: "charmap"
             , charmap_default: "arrows"
             , min_height: 350
         });
 
+        var textAreaID = "example_1";
+
         // callback functions
         function my_save(id, content) {
-            alert("Here is the content of the EditArea '" + id + "' as received by the save callback function:\n" + content);
+            let code = this.editAreaLoader.GetCurrentFile(textAreaID)
+            trySend(JSON.stringify({ action: "SAVE_CODE", data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
         }
 
         function my_load(id) {
             editAreaLoader.setValue(id, "The content is loaded from the load_callback function into EditArea");
+        }
+
+        function my_change_callback(id) {
+            let code = this.editAreaLoader.GetCurrentFile(textAreaID);
+            localStorage.setItem(code.title, JSON.stringify(code));
         }
 
         function test_setSelectionRange(id) {
@@ -56,27 +65,49 @@
         }
 
         function editAreaLoaded(id) {
-            if (id == "example_2") {
-                open_file1();
-                open_file2();
-            }
+                open_file1(id);
         }
 
-
+        function open_file1(id){
+            let new_file = { id: "empty_file.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.'};
+			editAreaLoader.openFile(id, new_file);
+        }
         function toogle_editable(id) {
             editAreaLoader.execCommand(id, 'set_editable', !editAreaLoader.execCommand(id, 'is_editable'));
         }
-
     </script>
     <link href="index.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <h1>Pascal WEB Compiler</h1>
+    <header class="topnav">
+        <h1>Pascal WEB Compiler</h1>
+        <a href="#home" class="active">Home</a>
+        <button class="user_menu">
+            Login or Sign Up 
+            <i class="fa-caret-down">
+            </i>
+        </button>
+        <div class="dropdown-content">
+            <a>Link1</a>
+        </div>
+        <a href="#news">News</a>
+        <div class="dropdown">
+          <button class="dropbtn">Dropdown</button>
+          <div class="dropdown-content">
+                <a href="#">Link 1</a>
+                <a href="#">Link 2</a>
+                <a href="#">Link 3</a>
+          </div>
+        </div>
+    </header>
+    <br />
+    <br />
     <nav>
         <menu>
             <li> <a>Заголовок 1</a> <a>Заголовок 2</a> </li>
         </menu>
     </nav>
+
     <form id="auth_form" onSubmit="auth();return false">
         <input id="username" name="username" placeholder="Имя пользователя" />
         <br />
@@ -88,66 +119,45 @@
         <br />
         <div id="signin_result"></div>
     </form>
-    <form action="" method="post">
-        <fieldset>
-            <legend>Code Area</legend>
-            <input type="file" id="filename"/> 
-            <br/>
-            <br/>
-            <textarea class="textarea1" id="example_1" name="test_1">
-//Simple example
-var a,b,c:integer;
-begin
-	a:=2;
-	b:=3;
-	c:=4;
-	writeln(sqr(a)+b*c);
-end.
-		    </textarea>
-            <p>
-                Custom controls: <br />
-                <input type='button' onclick='alert(editAreaLoader.getValue("example_1"));' value='get value' />
-                <input type='button' onclick='editAreaLoader.setValue("example_1", "new_value");' value='set value' />
-                <input type='button' onclick='test_getSelectionRange("example_1");' value='getSelectionRange' />
-                <input type='button' onclick='test_setSelectionRange("example_1");' value='setSelectionRange' />
-                <input type='button' onclick='test_getSelectedText("example_1");' value='getSelectedText' />
-                <input type='button' onclick='test_setSelectedText("example_1");' value='setSelectedText' />
-                <input type='button' onclick='editAreaLoader.insertTags("example_1", "[OPEN]", "[CLOSE]");' value='insertTags' />
-                <input type='button' onclick='toogle_editable("example_1");' value='Toggle readonly mode' />
-            </p>
-            <p>
-                <input type="button" onclick='sendCode("example_1");' value="Отправить" />
-            </p>
+    <div class="root">
+        <form action="" method="post">
+            <fieldset>
+                <legend>Code Area</legend>
+                <input type="file" id="filename" />
+                <br />
+                <br />
+                <textarea class="textarea1" id="example_1" name="test_1"></textarea>
+                <textarea class="compiler_answers" readonly=readonly>
+                
+                ssdasfsafasfasfas
+                </textarea>
+                <p>
+                    Custom controls: <br />
+                    <input type='button' onclick='alert(editAreaLoader.getValue("example_1"));' value='get value' />
+                    <input type='button' onclick='editAreaLoader.setValue("example_1", "new_value");' value='set value' />
+                    <input type='button' onclick='test_getSelectionRange("example_1");' value='getSelectionRange' />
+                    <input type='button' onclick='test_setSelectionRange("example_1");' value='setSelectionRange' />
+                    <input type='button' onclick='test_getSelectedText("example_1");' value='getSelectedText' />
+                    <input type='button' onclick='test_setSelectedText("example_1");' value='setSelectedText' />
+                    <input type='button' onclick='editAreaLoader.insertTags("example_1", "[OPEN]", "[CLOSE]");' value='insertTags' />
+                    <input type='button' onclick='toogle_editable("example_1");' value='Toggle readonly mode' />
+                </p>
+                <p>
+                    <input type="button" onclick='sendCode("example_1");' value="Отправить" />
+                </p>
 
-            <!-- div с сообщениями -->
-            <div id="compiler_messages"></div>
-        </fieldset>
-    </form>
+                <!-- div с сообщениями -->
+                <div id="compiler_messages"></div>
+            </fieldset>
+        </form>
+        <aside class="files_side">
+            <section>
+                <h2>Файлы</h2>
+            </section>
+        </aside>
+    </div>
 </body>
 <script>
-    let socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
-    var form = document.forms['form'];
-    let auth_hash = getCookie('hash');
-    socket.onopen = function () {
-        console.log('подключился');
-    };
-
-    socket.onclose = function (event) {
-        if (event.wasClean) {
-            //alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
-            changediv('#compiler_messages', 'Соединение закрыто чисто')
-        } else {
-            // например, сервер убил процесс или сеть недоступна
-            // обычно в этом случае event.code 1006
-            //alert('[close] Соединение прервано');
-            changediv('#compiler_messages', 'Соединение с сервером оборвано')
-        }
-    };
-
-    socket.onerror = function (error) {
-        alert(`[error] ${error.message}`);
-    };
-    
     function getCookie(name) {
         let matches = document.cookie.match(new RegExp(
             "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
@@ -178,24 +188,23 @@ end.
         }
         document.cookie = updatedCookie;
     }
+    var messageQueue = [];
+    function trySend(jsonString) {
+        if (socket.readyState === 2 || socket.readyState === 3) {
+            connectToServer();
+        }
+        if (socket.readyState !== 1) {
+            messageQueue.push(jsonString);
+        } else {
+            socket.send(jsonString);
+        }
+    }
 
     function auth() {
-        if (socket.readyState === 2 || socket.readyState === 3) {
-            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
-            socket.onopen = function () {
-                socket.send(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
-            }
-        }
-        socket.send(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
+        trySend(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
     };
     function signup() {
-        //if 
-        if (socket.readyState === 2 || socket.readyState === 3) {
-            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
-            socket.onopen = function () {
-                socket.send(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));            }
-        }
-        socket.send(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));
+        trySend(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));
     };
     function changediv(elem, message) {
         var changer = document.querySelector(elem);
@@ -213,22 +222,27 @@ end.
     // отправка сообщения из формы
     function sendCode(event) {
         changediv('#compiler_messages', 'Wait...');
-        let outgoingMessage = this.editAreaLoader.getValue("example_1");
- 
-        if (socket.readyState === 2 || socket.readyState === 3) {
-            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
-            socket.onopen = function () {
-                socket.send(JSON.stringify({ action: 'CODE', filename: "", data: outgoingMessage, hash: getCookie('hash') }));
-            }
-        }
-        if (socket.readyState === 1) {
-            socket.send(JSON.stringify({ action: 'CODE', filename: '', data: outgoingMessage, hash: getCookie('hash') }));
-        }
+        let code = this.editAreaLoader.GetCurrentFile(textAreaID);
+
+        trySend(JSON.stringify({ action: 'COMPILE_CODE', data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
         //let filename = document.querySelector();
         //alert('Message send');
         //alert(outgoingMessage);
         return;
     };
+
+    function checkLocalStorage() {
+        for (let iter in this.editAreaLoader.getAllFiles(textAreaID)) {
+            if (localStorage.getItem(iter.title) != null) {
+                this.editAreaLoader.openFile(textAreaID, JSON.parse(localStorage.getItem(iter.title)));
+            }
+        }
+    }
+
+    async function readOpenedFiles() {
+        trySend(JSON.stringify({ action: 'GET_OPENED_FILES', hash: getCookie('hash') }));
+    }
+
     var socket1 = [];
     async function testConnections(iterator) {
         socket1[iterator] = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
@@ -236,63 +250,122 @@ end.
             const start = Date.now();
             let outgoingMessage = editAreaLoader.getValue("example_1");
             //socket1[iterator].send(JSON.stringify({ action: 'CODE', data: outgoingMessage, filename: iterator, hash: getCookie('hash')}));
-            socket1[iterator].send(JSON.stringify({action: 'PING'}))
+            socket1[iterator].send(JSON.stringify({ action: 'PING' }))
             const duration = Date.now() - start;
             console.log(`send ${iterator} packet with ${duration}`);
         }
     }
+    var socket;
+    function connectToServer() {
+        socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
+        var form = document.forms['form'];
+        let auth_hash = getCookie('hash');
 
-    socket.onmessage = function (event) {
-        let input_message;
-        try {
-            input_message = JSON.parse(event.data);
-            switch (JSON.parse(event.data).action) {
-                case 'HELLO':
-                    changediv('#compiler_messages', input_message.data);
-                    getCookie('hash') === undefined ? socket.send(JSON.stringify({ action: 'GUEST_AUTH' })) : socket.send(JSON.stringify({ action: '', hash: ''}));
-                    break;
+        socket.onopen = function () {
+            console.log('подключился');
+        };
 
-                case 'GUEST_AUTH_OK':
-                    setCookie('hash', input_message.hash, { 'max-age': 86400 })
-                    //
-                    break;
-
-                case 'LOGIN_CORRECT':
-                    //document.getElementById('auth_form').delete;
-                    setCookie('hash', input_message.hash, { 'max-age': 31536000 })
-                    break;
-
-                case 'LOGIN_INCORRECT':
-                    changediv('#signin_result', 'Login or password incorrect')
-                    document.getElementById('auth_form').reset();
-                    break;
-
-                case 'SIGNUP_LOGIN_USED':
-                    changediv('#signin_result', 'This login already in use')
-                    document.getElementById('auth_form').reset();
-                    break;
-
-                case 'SIGNUP_SUCCESSFUL':
-                    //document.cookie set JSON.parse(event.data).hash
-                    socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
-                    setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
-                    break;
-
-                case 'COMPILER_ANSWER':
-                    changediv('#compiler_messages', input_message.data);
-                    break;
+        socket.onclose = function (event) {
+            if (event.wasClean) {
+                //alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+                changediv('#compiler_messages', 'Соединение закрыто чисто')
+            } else {
+                // например, сервер убил процесс или сеть недоступна
+                // обычно в этом случае event.code 1006
+                //alert('[close] Соединение прервано');
+                changediv('#compiler_messages', 'Соединение с сервером оборвано')
             }
-        } catch (e) {
-            console.log(`Error: ${e}`);
-            changediv('#compiler_messages', event.data);
-        }
+        };
 
-        console.log('MessageFULL: %s', event.origin, "0 ", "1 ", input_message.data, "2 ", event.data, "3 ", event.action);
-        console.log('Message: %s', input_message.data);
-        //let messageElem = document.createElement('div');
-        //messageElem.textContent = message;
-        //document.getElementById('compiler_messages').value = message;
-        //document.getElementById('compiler_messages').prepend(messageElem);
-    };
+        socket.onerror = function (error) {
+            alert(`[error] ${error.message}`);
+        };
+
+        socket.onmessage = function (event) {
+            let input_message;
+            try {
+                input_message = JSON.parse(event.data);
+                switch (input_message.action) {
+                    case 'HELLO':
+                        changediv('#compiler_messages', input_message.data);
+                        getCookie('hash') === undefined ? socket.send(JSON.stringify({ action: 'GUEST_AUTH' })) : socket.send(JSON.stringify({ action: '', hash: '' }));
+                        break;
+
+                    case 'GUEST_AUTH_OK':
+                        setCookie('hash', input_message.hash, { 'max-age': 86400 })
+                        //read from server opened files
+                        await readOpenedFiles();
+                        //read local storage
+                        checkLocalStorage();
+                        break;
+
+                    case 'LOGIN_CORRECT':
+                        //document.getElementById('auth_form').delete;
+
+                        //renew cookie lifetime
+                        setCookie('hash', input_message.hash, { 'max-age': 31536000 });
+                        //read from server opened files
+                        await readOpenedFiles();
+                        //read local storage
+                        checkLocalStorage();
+                        break;
+
+                    case 'LOGIN_INCORRECT':
+                        changediv('#signin_result', 'Login or password incorrect')
+                        document.getElementById('auth_form').reset();
+                        break;
+
+                    case 'SIGNUP_LOGIN_USED':
+                        changediv('#signin_result', 'This login already in use')
+                        document.getElementById('auth_form').reset();
+                        break;
+
+                    case 'SIGNUP_SUCCESSFUL':
+                        //document.cookie set JSON.parse(event.data).hash
+                        socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
+                        setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
+                        break;
+
+                    case 'SAVE_FILE_OK': {
+                        changediv('#compiler_messages', input_message.data);
+                        localStorage.removeItem(input_message.filename);
+                        break;
+                    }
+
+                    case 'GET_OPENED_FILES_OK': {
+                        //open all files in resolve
+                        let res = JSON.parse(input_message.data);
+                        for (let i in res) {
+                            this.editAreaLoader.openFile(textAreaID, res.raw_string)
+                        }
+                        break;
+                    }
+
+                    case 'NO_OPENED_FILES': {
+                        //what name set for new file?
+                        this.editAreaLoader.openFile(textAreaID, { id: 'new_file.pas', title: 'new_file.pas', text: '//new file'})
+                        //open new file
+                        break;
+                    }
+
+                    case 'COMPILER_ANSWER':
+                        changediv('#compiler_messages', input_message.data);
+                        break;
+                }
+            } catch (e) {
+                console.log(`Error: ${e}`);
+                changediv('#compiler_messages', event.data);
+            }
+
+            console.log('MessageFULL: %s', event.origin, "0 ", "1 ", input_message.data, "2 ", event.data, "3 ", event.action);
+            console.log('Message: %s', input_message.data);
+            //let messageElem = document.createElement('div');
+            //messageElem.textContent = message;
+            //document.getElementById('compiler_messages').value = message;
+            //document.getElementById('compiler_messages').prepend(messageElem);
+        };
+    }
+
+    connectToServer();
 </script>
 </html>
