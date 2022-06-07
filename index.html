@@ -408,7 +408,7 @@
                         for (let f of files.rows) {
                             addFileToFilelist(f.filename, f.raw_string);
                         }
-                        file_list.firstElementChild.selected = true;
+                        file_list.lastElementChild.selected = true;
                         openFileBySelect(file_list.value);
                         //readOpenedFiles();
                         checkLocalStorage();
@@ -416,10 +416,10 @@
                     }
                     case 'NEW_GUEST_REGISTRATION_OK':
                         setCookie('hash', input_message.hash, { 'max-age': 86400 });
-                        trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }))
                         //open sample file
                         openSample();
-                        my_save(textAreaID, '')
+                        my_save(textAreaID, '');
+                        trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
                         break;
 
                     case 'LOGIN_CORRECT':
