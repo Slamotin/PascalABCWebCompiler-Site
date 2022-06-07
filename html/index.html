@@ -76,7 +76,7 @@
         }
 
         function openSample(){
-            let new_file = { id: "empty_file.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.'};
+            let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.'};
 			editAreaLoader.openFile(textAreaID, new_file);
         }
         function toogle_editable(id) {
@@ -168,7 +168,7 @@
                 <h2>Файлы</h2>
                 <form action="alert(value);" id="file_form">
                     <p>
-                        <select id="file_list" multiple="multiple">
+                        <select id="file_list" multiple="multiple" onchange="deselectAllFiles()">
                         </select>
                     </p>
                     <button type="button" id="openFileButton" onClick="openFileBySelect(file_list.selectedOptions[0].innerText)">Открыть</button>
@@ -314,7 +314,7 @@
         }
         editAreaLoader.openFile(textAreaID, { id: filename + number + '.pas' })
         my_save(textAreaID, '');
-        setTimeout(()=>getAllFiles(), 1000);
+        //setTimeout(()=>getAllFiles(), 1000);
     }
 
     function deleteFile(filename) {
@@ -330,6 +330,12 @@
 
     function changeFileName(filename) {
         
+    }
+
+    function deselectAllFiles() {
+        for (let i of file_list.options) {
+            i.selected = false;
+        }
     }
 
     var socket1 = [];
@@ -395,6 +401,7 @@
                         for (let f of files.rows) {
                             addFileToFilelist(f.filename, f.raw_string);
                         }
+                        deselectAllFiles();
                         file_list.lastElementChild.selected = true;
                         openFileBySelect(file_list.value);
                         //readOpenedFiles();
@@ -408,6 +415,7 @@
                         for (let f of files.rows) {
                             addFileToFilelist(f.filename, f.raw_string);
                         }
+                        deselectAllFiles();
                         file_list.lastElementChild.selected = true;
                         openFileBySelect(file_list.value);
                         //readOpenedFiles();
