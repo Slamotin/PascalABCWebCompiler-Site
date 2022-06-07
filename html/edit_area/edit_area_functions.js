@@ -228,6 +228,7 @@
 			
 	EditArea.prototype.new_document= function(){
 		this.textarea.value="";
+		//this.openFile(textAreaID, "");
 		this.area_select(0,0);
 	};
 	

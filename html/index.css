@@ -7,8 +7,8 @@
 	margin-left: 15px;
 	margin-bottom: 15px;
 }
-.files_side{
-    display: flex;
+#files_side{
+    display: block;
     grid-area: auto;
     right: 0px;
     z-index: top;
@@ -17,6 +17,11 @@
     align-items: flex-start;
     position: fixed;
     /*background-color: gray;*/
+}
+#file_list{
+    display: block;
+    min-height: 50px;
+    min-width: 100px;
 }
 .root {
     display: grid;
@@ -98,3 +103,8 @@
 
 /* Change the background color of the dropdown button when the dropdown content is shown */
 .dropdown:hover .dropbtn {background-color: #3e8e41;}
+
+
+#changeFileName {
+    margin: 5px;
+}
