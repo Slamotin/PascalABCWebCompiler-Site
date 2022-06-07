@@ -27,14 +27,18 @@
             , plugins: "charmap"
             , charmap_default: "arrows"
             , min_height: 350
+            , debug: true
         });
 
         var textAreaID = "example_1";
 
         // callback functions
-        function my_save(id, content) {
-            let code = this.editAreaLoader.GetCurrentFile(textAreaID)
-            trySend(JSON.stringify({ action: "SAVE_CODE", data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
+        function my_save(id, textarea_content) {
+            let code = this.editAreaLoader.getCurrentFile(textAreaID);
+            trySend(JSON.stringify({ action: "SAVE_FILE", data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
+
+            sessionStorage.removeItem(code.title);
+            setTimeout(() => getAllFiles(), 1000);
         }
 
         function my_load(id) {
@@ -42,8 +46,8 @@
         }
 
         function my_change_callback(id) {
-            let code = this.editAreaLoader.GetCurrentFile(textAreaID);
-            localStorage.setItem(code.title, JSON.stringify(code));
+            let code = this.editAreaLoader.getCurrentFile(textAreaID);
+            sessionStorage.setItem(code.title, JSON.stringify(code));
         }
 
         function test_setSelectionRange(id) {
@@ -65,12 +69,15 @@
         }
 
         function editAreaLoaded(id) {
-                open_file1(id);
+            //open_file1(id);
+            for (let iter = 0; iter < sessionStorage.length; iter++){
+                editAreaLoader.openFile(textAreaID, JSON.parse(sessionStorage.getItem(sessionStorage.key(iter))));
+            }
         }
 
-        function open_file1(id){
+        function openSample(){
             let new_file = { id: "empty_file.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.'};
-			editAreaLoader.openFile(id, new_file);
+			editAreaLoader.openFile(textAreaID, new_file);
         }
         function toogle_editable(id) {
             editAreaLoader.execCommand(id, 'set_editable', !editAreaLoader.execCommand(id, 'is_editable'));
@@ -79,6 +86,7 @@
     <link href="index.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+<!--
     <header class="topnav">
         <h1>Pascal WEB Compiler</h1>
         <a href="#home" class="active">Home</a>
@@ -107,6 +115,7 @@
             <li> <a>Заголовок 1</a> <a>Заголовок 2</a> </li>
         </menu>
     </nav>
+-->
 
     <form id="auth_form" onSubmit="auth();return false">
         <input id="username" name="username" placeholder="Имя пользователя" />
@@ -117,6 +126,9 @@
         <button type="button" onClick="signup()">Регистрация</button>
         <br />
         <br />
+        <div><input type="checkbox" id="saveMyAuth" /><label for="saveMyAuth">Запомнить меня</label></div>
+        <br />
+        <br />
         <div id="signin_result"></div>
     </form>
     <div class="root">
@@ -124,6 +136,8 @@
             <fieldset>
                 <legend>Code Area</legend>
                 <input type="file" id="filename" />
+                <input type="text" id="fileNameFolder" />
+                <button type="button" id="changeFileName" onClick="changeFileName(fileNameFolder.value)">Изменить имя файла</button>
                 <br />
                 <br />
                 <textarea class="textarea1" id="example_1" name="test_1"></textarea>
@@ -150,10 +164,16 @@
                 <div id="compiler_messages"></div>
             </fieldset>
         </form>
-        <aside class="files_side">
-            <section>
+        <aside id="files_side">
                 <h2>Файлы</h2>
-            </section>
+                <form action="alert(value);" id="file_form">
+                    <p>
+                        <select id="file_list" multiple="multiple">
+                        </select>
+                    </p>
+                    <button type="button" id="openFileButton" onClick="openFileBySelect(file_list.selectedOptions[0].innerText)">Открыть</button>
+                    <button type="button" id="deleteSelectedFile" onClick="deleteFile(file_list.selectedOptions[0].innerText)">Удалить</button>
+                </form>
         </aside>
     </div>
 </body>
@@ -198,6 +218,7 @@
         } else {
             socket.send(jsonString);
         }
+        console.log("Send: " + jsonString)
     }
 
     function auth() {
@@ -222,7 +243,7 @@
     // отправка сообщения из формы
     function sendCode(event) {
         changediv('#compiler_messages', 'Wait...');
-        let code = this.editAreaLoader.GetCurrentFile(textAreaID);
+        let code = this.editAreaLoader.getCurrentFile(textAreaID);
 
         trySend(JSON.stringify({ action: 'COMPILE_CODE', data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
         //let filename = document.querySelector();
@@ -239,8 +260,76 @@
         }
     }
 
-    async function readOpenedFiles() {
+    /*async function readOpenedFiles() {
         trySend(JSON.stringify({ action: 'GET_OPENED_FILES', hash: getCookie('hash') }));
+    }*/
+
+    async function addFileToFilelist(filename, raw_string) {
+        let contains = [];
+        for (let elem of document.getElementById('file_list').children) {
+            contains.push(elem.innerText)
+        }
+        //if (document.getElementById('file_list'))
+        if (!contains.includes(filename)) {
+            let newOptionNode = document.createElement('option');
+            newOptionNode.innerText = filename;
+            newOptionNode.ondblclick = function () { openFileBySelect(this.innerText); };
+            //newOptionNode.addEventListener(ondblclick, openFileBySelect)
+            document.getElementById('file_list').appendChild(newOptionNode);
+        }
+        
+        //sessionStorage.setItem(filename, raw_string);
+    }
+
+    function openFileBySelect(filename) {
+        if (file_list.selectedOptions[0] == undefined) {
+            changediv('#compiler_messages', 'No one selected file')
+        } else {
+            trySend(JSON.stringify({ action: 'GET_FILE', hash: getCookie('hash'), filename: filename }));
+        }
+    }
+
+    function getAllFiles() { //when we auth we get all files
+        trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
+    }
+
+    function openNewFile() {
+        let filename = 'new_file';
+        let number = 0;
+        let used_numbers = [];
+        for (let iter of file_list) {
+            let parsed_line = iter.innerText.split(/(\d+)/)
+            let n = parseInt(parsed_line[1])
+            if (parsed_line[0] == filename) {
+                used_numbers.push(n);
+            }
+        };
+        while (true) {
+            let aaa = used_numbers.indexOf(number);
+            if (used_numbers.indexOf(number) != -1) {
+                number++;
+            } else {
+                break;
+            }
+        }
+        editAreaLoader.openFile(textAreaID, { id: filename + number + '.pas' })
+        my_save(textAreaID, '');
+        setTimeout(()=>getAllFiles(), 1000);
+    }
+
+    function deleteFile(filename) {
+        
+        if (file_list.selectedOptions[0] == undefined) {
+            changediv('#compiler_messages', 'No one selected file')
+        } else {
+            file_list.selectedOptions[0].remove()
+            trySend(JSON.stringify({ action: 'DELETE_FILE', hash: getCookie('hash'), filename: filename }));
+            this.editAreaLoader.closeFile(textAreaID, filename);
+        }
+    }
+
+    function changeFileName(filename) {
+        
     }
 
     var socket1 = [];
@@ -255,7 +344,9 @@
             console.log(`send ${iterator} packet with ${duration}`);
         }
     }
+
     var socket;
+    var input_message;
     function connectToServer() {
         socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
         var form = document.forms['form'];
@@ -263,6 +354,9 @@
 
         socket.onopen = function () {
             console.log('подключился');
+            while (messageQueue.length > 0) {
+                socket.send(messageQueue.pop());
+            }
         };
 
         socket.onclose = function (event) {
@@ -282,30 +376,63 @@
         };
 
         socket.onmessage = function (event) {
-            let input_message;
             try {
                 input_message = JSON.parse(event.data);
                 switch (input_message.action) {
                     case 'HELLO':
                         changediv('#compiler_messages', input_message.data);
-                        getCookie('hash') === undefined ? socket.send(JSON.stringify({ action: 'GUEST_AUTH' })) : socket.send(JSON.stringify({ action: '', hash: '' }));
+                        getCookie('hash') === undefined ? socket.send(JSON.stringify({ action: 'NEW_GUEST' })) : socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
                         break;
-
-                    case 'GUEST_AUTH_OK':
-                        setCookie('hash', input_message.hash, { 'max-age': 86400 })
-                        //read from server opened files
-                        await readOpenedFiles();
-                        //read local storage
+                    case 'AUTH_OK': {
+                        //change auth_form
+                        let a = document.createElement('a');
+                        a.innerText = 'Привет, ' + input_message.nickname;
+                        //a.margin
+                        auth_form.after(a);
+                        auth_form.style.display == 'none';
+                        //change file_form
+                        let files = JSON.parse(input_message.files);
+                        for (let f of files.rows) {
+                            addFileToFilelist(f.filename, f.raw_string);
+                        }
+                        file_list.lastElementChild.selected = true;
+                        openFileBySelect(file_list.value);
+                        //readOpenedFiles();
                         checkLocalStorage();
+                        break;
+                    }
+
+                    case 'GUEST_AUTH_OK': {
+                        //change file_form
+                        let files = JSON.parse(input_message.files);
+                        for (let f of files.rows) {
+                            addFileToFilelist(f.filename, f.raw_string);
+                        }
+                        file_list.firstElementChild.selected = true;
+                        openFileBySelect(file_list.value);
+                        //readOpenedFiles();
+                        checkLocalStorage();
+                        break;
+                    }
+                    case 'NEW_GUEST_REGISTRATION_OK':
+                        setCookie('hash', input_message.hash, { 'max-age': 86400 });
+                        trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }))
+                        //open sample file
+                        openSample();
+                        my_save(textAreaID, '')
                         break;
 
                     case 'LOGIN_CORRECT':
                         //document.getElementById('auth_form').delete;
-
-                        //renew cookie lifetime
-                        setCookie('hash', input_message.hash, { 'max-age': 31536000 });
+                        if (document.getElementById("saveMyAuth").checked) {
+                            //renew cookie lifetime
+                            setCookie('hash', input_message.hash, { 'max-age': 31536000 });
+                        } else {
+                            //save hash only in session
+                            setCookie('hash', input_message.hash);
+                        }
                         //read from server opened files
-                        await readOpenedFiles();
+                        //readOpenedFiles();
                         //read local storage
                         checkLocalStorage();
                         break;
@@ -314,7 +441,12 @@
                         changediv('#signin_result', 'Login or password incorrect')
                         document.getElementById('auth_form').reset();
                         break;
-
+                    case 'TOKEN_NOT_VALID':{
+                        //delete hash
+                        setCookie('hash','', {'max-age': -1})
+                        changediv('#compiler_messages', 'Your token not valid or expired, please refresh page or use sign in form')
+                        break;
+                    }
                     case 'SIGNUP_LOGIN_USED':
                         changediv('#signin_result', 'This login already in use')
                         document.getElementById('auth_form').reset();
@@ -322,8 +454,9 @@
 
                     case 'SIGNUP_SUCCESSFUL':
                         //document.cookie set JSON.parse(event.data).hash
-                        socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
-                        setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
+                        //socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
+                        //setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
+                        changediv('#signin_result', 'Registration complete! Now you can enter to account.')
                         break;
 
                     case 'SAVE_FILE_OK': {
@@ -332,10 +465,23 @@
                         break;
                     }
 
-                    case 'GET_OPENED_FILES_OK': {
+                    case 'TAKE_FILE': {
+                        let file = JSON.parse(input_message.raw_string)
+                        console.log('File: ' + file.rows[0].raw_string)
+                        console.log('Take file: ' + JSON.parse(file.rows[0].raw_string).title);
+                        editAreaLoader.openFile(textAreaID, JSON.parse(file.rows[0].raw_string));
+                        break;
+                    }
+
+                    case 'DELETE_SUCCESSFUL': {
+                        changediv('#compiler_messages', 'Delete completed')
+                        break;
+                    }
+
+                    /*case 'GET_OPENED_FILES_OK': {
                         //open all files in resolve
                         let res = JSON.parse(input_message.data);
-                        for (let i in res) {
+                        for (let i of res) {
                             this.editAreaLoader.openFile(textAreaID, res.raw_string)
                         }
                         break;
@@ -346,7 +492,7 @@
                         this.editAreaLoader.openFile(textAreaID, { id: 'new_file.pas', title: 'new_file.pas', text: '//new file'})
                         //open new file
                         break;
-                    }
+                    }*/
 
                     case 'COMPILER_ANSWER':
                         changediv('#compiler_messages', input_message.data);
