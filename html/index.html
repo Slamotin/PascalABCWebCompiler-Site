@@ -27,14 +27,27 @@
             , plugins: "charmap"
             , charmap_default: "arrows"
             , min_height: 350
-            , debug: true
+            , EA_file_switch_on_callback: "showFileName"
         });
 
-        var textAreaID = "example_1";
+        var textEditorID = "example_1";
 
         // callback functions
+        
+        function showFileName(fileInfo){
+            fileNameFolder.value = fileInfo.title.split('.')[0];
+            
+            deselectAllFiles();
+            for (let i of file_list.options){
+                if (i.value == fileInfo.title){
+                    i.selected = true;
+                    break;
+                }    
+            }
+            
+        }
         function my_save(id, textarea_content) {
-            let code = this.editAreaLoader.getCurrentFile(textAreaID);
+            let code = this.editAreaLoader.getCurrentFile(textEditorID);
             trySend(JSON.stringify({ action: "SAVE_FILE", data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
 
             sessionStorage.removeItem(code.title);
@@ -46,7 +59,7 @@
         }
 
         function my_change_callback(id) {
-            let code = this.editAreaLoader.getCurrentFile(textAreaID);
+            let code = this.editAreaLoader.getCurrentFile(textEditorID);
             sessionStorage.setItem(code.title, JSON.stringify(code));
         }
 
@@ -70,52 +83,54 @@
 
         function editAreaLoaded(id) {
             //open_file1(id);
-            for (let iter = 0; iter < sessionStorage.length; iter++){
-                editAreaLoader.openFile(textAreaID, JSON.parse(sessionStorage.getItem(sessionStorage.key(iter))));
+            for (let iter = 0; iter < sessionStorage.length; iter++) {
+                editAreaLoader.openFile(textEditorID, JSON.parse(sessionStorage.getItem(sessionStorage.key(iter))));
             }
         }
 
-        function openSample(){
-            let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.'};
-			editAreaLoader.openFile(textAreaID, new_file);
+        function openSample() {
+            let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.' };
+            editAreaLoader.openFile(textEditorID, new_file);
         }
+        
         function toogle_editable(id) {
             editAreaLoader.execCommand(id, 'set_editable', !editAreaLoader.execCommand(id, 'is_editable'));
         }
     </script>
+    
     <link href="index.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-<!--
-    <header class="topnav">
-        <h1>Pascal WEB Compiler</h1>
-        <a href="#home" class="active">Home</a>
-        <button class="user_menu">
-            Login or Sign Up 
-            <i class="fa-caret-down">
-            </i>
-        </button>
-        <div class="dropdown-content">
-            <a>Link1</a>
-        </div>
-        <a href="#news">News</a>
-        <div class="dropdown">
-          <button class="dropbtn">Dropdown</button>
-          <div class="dropdown-content">
-                <a href="#">Link 1</a>
-                <a href="#">Link 2</a>
-                <a href="#">Link 3</a>
-          </div>
-        </div>
-    </header>
-    <br />
-    <br />
-    <nav>
-        <menu>
-            <li> <a>Заголовок 1</a> <a>Заголовок 2</a> </li>
-        </menu>
-    </nav>
--->
+    <!--
+        <header class="topnav">
+            <h1>Pascal WEB Compiler</h1>
+            <a href="#home" class="active">Home</a>
+            <button class="user_menu">
+                Login or Sign Up
+                <i class="fa-caret-down">
+                </i>
+            </button>
+            <div class="dropdown-content">
+                <a>Link1</a>
+            </div>
+            <a href="#news">News</a>
+            <div class="dropdown">
+              <button class="dropbtn">Dropdown</button>
+              <div class="dropdown-content">
+                    <a href="#">Link 1</a>
+                    <a href="#">Link 2</a>
+                    <a href="#">Link 3</a>
+              </div>
+            </div>
+        </header>
+        <br />
+        <br />
+        <nav>
+            <menu>
+                <li> <a>Заголовок 1</a> <a>Заголовок 2</a> </li>
+            </menu>
+        </nav>
+    -->
 
     <form id="auth_form" onSubmit="auth();return false">
         <input id="username" name="username" placeholder="Имя пользователя" />
@@ -133,18 +148,17 @@
     </form>
     <div class="root">
         <form action="" method="post">
-            <fieldset>
-                <legend>Code Area</legend>
                 <input type="file" id="filename" />
                 <input type="text" id="fileNameFolder" />
-                <button type="button" id="changeFileName" onClick="changeFileName(fileNameFolder.value)">Изменить имя файла</button>
+                <button type="button" id="changeFileNameButton" onClick="changeFileName(editAreaLoader.getCurrentFile(textEditorID))">Изменить имя файла</button>
                 <br />
                 <br />
                 <textarea class="textarea1" id="example_1" name="test_1"></textarea>
-                <textarea class="compiler_answers" readonly=readonly>
-                
-                ssdasfsafasfasfas
-                </textarea>
+                <div id="stdin_box">
+                    <button type="button" id="enterInputText" onClick="toggleDisplay(stdInput); toggleName('enter input (stdin) -- show','enter input (stdin) -- hide',stdInput, enterInputText)"> enter input (stdin) -- hide</button>
+                    <textarea id="stdInput" placeholder="Введите нужные данные перед отправкой на сервер"></textarea>
+</div>
+                <textarea id="compiler_answers" readonly="readonly" placeholder="Здесь будет отображаться ответ компилятора"></textarea>
                 <p>
                     Custom controls: <br />
                     <input type='button' onclick='alert(editAreaLoader.getValue("example_1"));' value='get value' />
@@ -162,18 +176,17 @@
 
                 <!-- div с сообщениями -->
                 <div id="compiler_messages"></div>
-            </fieldset>
         </form>
         <aside id="files_side">
-                <h2>Файлы</h2>
-                <form action="alert(value);" id="file_form">
-                    <p>
-                        <select id="file_list" multiple="multiple" onchange="deselectAllFiles()">
-                        </select>
-                    </p>
-                    <button type="button" id="openFileButton" onClick="openFileBySelect(file_list.selectedOptions[0].innerText)">Открыть</button>
-                    <button type="button" id="deleteSelectedFile" onClick="deleteFile(file_list.selectedOptions[0].innerText)">Удалить</button>
-                </form>
+            <h2>Файлы</h2>
+            <form action="alert(value);" id="file_form">
+                <p>
+                    <select id="file_list" multiple="multiple" onchange="console.log(this.value)">
+                    </select>
+                </p>
+                <button type="button" id="openFileButton" onClick="openFileBySelect(file_list.selectedOptions[0].innerText)">Открыть</button>
+                <button type="button" id="deleteSelectedFile" onClick="deleteFile(file_list.selectedOptions[0].innerText)">Удалить</button>
+            </form>
         </aside>
     </div>
 </body>
@@ -208,12 +221,75 @@
         }
         document.cookie = updatedCookie;
     }
+
+    function getRealDisplay(elem) {
+        if (elem.currentStyle) {
+            return elem.currentStyle.display
+        } else if (window.getComputedStyle) {
+            var computedStyle = window.getComputedStyle(elem, null)
+
+            return computedStyle.getPropertyValue('display')
+        }
+    }
+
+    function hide(el) {
+        if (!el.getAttribute('displayOld')) {
+            el.setAttribute("displayOld", el.style.display)
+        }
+
+        el.style.display = "none"
+    }
+
+    displayCache = {}
+
+    function isHidden(el) {
+        var width = el.offsetWidth, height = el.offsetHeight,
+            tr = el.nodeName.toLowerCase() === "tr"
+
+        return width === 0 && height === 0 && !tr ?
+            true : width > 0 && height > 0 && !tr ? false : getRealDisplay(el)
+    }
+
+    function toggleDisplay(el) {
+        isHidden(el) ? show(el) : hide(el)
+    }
+    function toggleName(showName, hideName, toggledElemID, changedElemID){
+        isHidden(toggledElemID) ? changedElemID.innerText = showName : changedElemID.innerText = hideName ;
+    }
+    function show(el) {
+
+        if (getRealDisplay(el) != 'none') return
+
+        var old = el.getAttribute("displayOld");
+        el.style.display = old || "";
+
+        if (getRealDisplay(el) === "none") {
+            var nodeName = el.nodeName, body = document.body, display
+
+            if (displayCache[nodeName]) {
+                display = displayCache[nodeName]
+            } else {
+                var testElem = document.createElement(nodeName)
+                body.appendChild(testElem)
+                display = getRealDisplay(testElem)
+
+                if (display === "none") {
+                    display = "block"
+                }
+
+                body.removeChild(testElem)
+                displayCache[nodeName] = display
+            }
+
+            el.setAttribute('displayOld', display)
+            el.style.display = display
+        }
+    }
+
     var messageQueue = [];
     function trySend(jsonString) {
-        if (socket.readyState === 2 || socket.readyState === 3) {
+        if (socket.readyState === 0 ||socket.readyState === 2 || socket.readyState === 3) {
             connectToServer();
-        }
-        if (socket.readyState !== 1) {
             messageQueue.push(jsonString);
         } else {
             socket.send(jsonString);
@@ -243,9 +319,9 @@
     // отправка сообщения из формы
     function sendCode(event) {
         changediv('#compiler_messages', 'Wait...');
-        let code = this.editAreaLoader.getCurrentFile(textAreaID);
+        let code = this.editAreaLoader.getCurrentFile(textEditorID);
 
-        trySend(JSON.stringify({ action: 'COMPILE_CODE', data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
+        trySend(JSON.stringify({ action: 'COMPILE_CODE', data: code.text, hash: getCookie("hash"), filename: code.title, stdin: stdInput.value, raw_string: code }));
         //let filename = document.querySelector();
         //alert('Message send');
         //alert(outgoingMessage);
@@ -253,9 +329,9 @@
     };
 
     function checkLocalStorage() {
-        for (let iter in this.editAreaLoader.getAllFiles(textAreaID)) {
+        for (let iter in this.editAreaLoader.getAllFiles(textEditorID)) {
             if (localStorage.getItem(iter.title) != null) {
-                this.editAreaLoader.openFile(textAreaID, JSON.parse(localStorage.getItem(iter.title)));
+                this.editAreaLoader.openFile(textEditorID, JSON.parse(localStorage.getItem(iter.title)));
             }
         }
     }
@@ -277,13 +353,14 @@
             //newOptionNode.addEventListener(ondblclick, openFileBySelect)
             document.getElementById('file_list').appendChild(newOptionNode);
         }
-        
+
         //sessionStorage.setItem(filename, raw_string);
     }
 
     function openFileBySelect(filename) {
         if (file_list.selectedOptions[0] == undefined) {
-            changediv('#compiler_messages', 'No one selected file')
+            //'No one selected file'
+            changediv('#compiler_messages', 'Не выбрано ни одного файла')
         } else {
             trySend(JSON.stringify({ action: 'GET_FILE', hash: getCookie('hash'), filename: filename }));
         }
@@ -312,30 +389,46 @@
                 break;
             }
         }
-        editAreaLoader.openFile(textAreaID, { id: filename + number + '.pas' })
-        my_save(textAreaID, '');
+        editAreaLoader.openFile(textEditorID, { id: filename + number + '.pas' })
+        my_save(textEditorID, '');
         //setTimeout(()=>getAllFiles(), 1000);
     }
 
     function deleteFile(filename) {
-        
+
         if (file_list.selectedOptions[0] == undefined) {
-            changediv('#compiler_messages', 'No one selected file')
+            //'No one selected file'
+            changediv('#compiler_messages', 'Не выбрано ни одного файла')
         } else {
             file_list.selectedOptions[0].remove()
             trySend(JSON.stringify({ action: 'DELETE_FILE', hash: getCookie('hash'), filename: filename }));
-            this.editAreaLoader.closeFile(textAreaID, filename);
+            this.editAreaLoader.closeFile(textEditorID, filename);
         }
     }
 
-    function changeFileName(filename) {
-        
+    function changeFileName(fileAllInfo) {
+        let oldFileName = '';
+        let hash = getCookie('hash');
+        if (fileNameFolder.value != '') {
+            oldFileName = fileAllInfo.title;
+            fileAllInfo.id = fileNameFolder.value + '.pas';
+            fileAllInfo.title = fileNameFolder.value + '.pas';
+            trySend(JSON.stringify({ action: 'DELETE_FILE', hash: hash, filename: oldFileName }));
+            this.editAreaLoader.closeFile(textEditorID, oldFileName);
+            this.editAreaLoader.openFile(textEditorID, fileAllInfo);
+            my_save(textEditorID, '')
+        }
     }
 
     function deselectAllFiles() {
         for (let i of file_list.options) {
             i.selected = false;
         }
+    }
+
+    async function addTextToTextarea(textAreaID, text) {
+        textAreaID.append(text + '\n');
+        textAreaID.scrollTop = textAreaID.scrollHeight;
     }
 
     var socket1 = [];
@@ -353,7 +446,7 @@
 
     var socket;
     var input_message;
-    function connectToServer() {
+    async function connectToServer() {
         socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
         var form = document.forms['form'];
         let auth_hash = getCookie('hash');
@@ -398,12 +491,17 @@
                         auth_form.style.display == 'none';
                         //change file_form
                         let files = JSON.parse(input_message.files);
-                        for (let f of files.rows) {
-                            addFileToFilelist(f.filename, f.raw_string);
+                        if (files.rows[0] != null) {
+                            for (let f of files.rows) {
+                                addFileToFilelist(f.filename, f.raw_string);
+                            }
+                            deselectAllFiles();
+                            file_list.lastElementChild.selected = true;
+                            openFileBySelect(file_list.value);
+                        } else {
+                            openSample();
+                            my_save(textEditorID, '');
                         }
-                        deselectAllFiles();
-                        file_list.lastElementChild.selected = true;
-                        openFileBySelect(file_list.value);
                         //readOpenedFiles();
                         checkLocalStorage();
                         break;
@@ -411,13 +509,21 @@
 
                     case 'GUEST_AUTH_OK': {
                         //change file_form
-                        let files = JSON.parse(input_message.files);
-                        for (let f of files.rows) {
-                            addFileToFilelist(f.filename, f.raw_string);
+                        while(file_list.firstElementChild){
+                            file_list.firstElementChild.remove()
                         }
-                        deselectAllFiles();
-                        file_list.lastElementChild.selected = true;
-                        openFileBySelect(file_list.value);
+                        let files = JSON.parse(input_message.files);
+                        if (files.rows[0] != null) {
+                            for (let f of files.rows) {
+                                addFileToFilelist(f.filename, f.raw_string);
+                            }
+                            deselectAllFiles();
+                            file_list.lastElementChild.selected = true;
+                            openFileBySelect(file_list.value);
+                        } else {
+                            openSample();
+                            my_save(textEditorID, '');
+                        }
                         //readOpenedFiles();
                         checkLocalStorage();
                         break;
@@ -426,7 +532,7 @@
                         setCookie('hash', input_message.hash, { 'max-age': 86400 });
                         //open sample file
                         openSample();
-                        my_save(textAreaID, '');
+                        my_save(textEditorID, '');
                         trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
                         break;
 
@@ -446,17 +552,20 @@
                         break;
 
                     case 'LOGIN_INCORRECT':
-                        changediv('#signin_result', 'Login or password incorrect')
+                        //'Login or password incorrect'
+                        changediv('#signin_result', 'Неправльные логин и/или пароль')
                         document.getElementById('auth_form').reset();
                         break;
-                    case 'TOKEN_NOT_VALID':{
+                    case 'TOKEN_NOT_VALID': {
                         //delete hash
-                        setCookie('hash','', {'max-age': -1})
-                        changediv('#compiler_messages', 'Your token not valid or expired, please refresh page or use sign in form')
+                        setCookie('hash', '', { 'max-age': -1 })
+                        //'Your token not valid or expired, please refresh page or use sign in form'
+                        changediv('#compiler_messages', 'Ваш токен аутентификации недействителен, перезагрузите страницу. ')
                         break;
                     }
                     case 'SIGNUP_LOGIN_USED':
-                        changediv('#signin_result', 'This login already in use')
+                        //'This login already in use'
+                        changediv('#signin_result', 'Данный логин уже используется')
                         document.getElementById('auth_form').reset();
                         break;
 
@@ -464,11 +573,13 @@
                         //document.cookie set JSON.parse(event.data).hash
                         //socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
                         //setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
-                        changediv('#signin_result', 'Registration complete! Now you can enter to account.')
+
+                        //'Registration complete! Now you can enter to account.'
+                        changediv('#signin_result', 'Регистрация прошла успешно. Авторизуйтесь по Вашему логину и паролю');
                         break;
 
                     case 'SAVE_FILE_OK': {
-                        changediv('#compiler_messages', input_message.data);
+                        addTextToTextarea(compiler_answers, input_message.data);
                         localStorage.removeItem(input_message.filename);
                         break;
                     }
@@ -477,12 +588,13 @@
                         let file = JSON.parse(input_message.raw_string)
                         console.log('File: ' + file.rows[0].raw_string)
                         console.log('Take file: ' + JSON.parse(file.rows[0].raw_string).title);
-                        editAreaLoader.openFile(textAreaID, JSON.parse(file.rows[0].raw_string));
+                        editAreaLoader.openFile(textEditorID, JSON.parse(file.rows[0].raw_string));
                         break;
                     }
 
                     case 'DELETE_SUCCESSFUL': {
-                        changediv('#compiler_messages', 'Delete completed')
+                        //'Delete completed'
+                        addTextToTextarea(compiler_answers, 'Файл удалён успешно')
                         break;
                     }
 
@@ -490,33 +602,30 @@
                         //open all files in resolve
                         let res = JSON.parse(input_message.data);
                         for (let i of res) {
-                            this.editAreaLoader.openFile(textAreaID, res.raw_string)
+                            this.editAreaLoader.openFile(textEditorID, res.raw_string)
                         }
                         break;
                     }
 
                     case 'NO_OPENED_FILES': {
                         //what name set for new file?
-                        this.editAreaLoader.openFile(textAreaID, { id: 'new_file.pas', title: 'new_file.pas', text: '//new file'})
+                        this.editAreaLoader.openFile(textEditorID, { id: 'new_file.pas', title: 'new_file.pas', text: '//new file'})
                         //open new file
                         break;
                     }*/
 
                     case 'COMPILER_ANSWER':
-                        changediv('#compiler_messages', input_message.data);
+                        addTextToTextarea(compiler_answers, input_message.data);
+                        changediv('#compiler_messages', '');
                         break;
                 }
             } catch (e) {
                 console.log(`Error: ${e}`);
-                changediv('#compiler_messages', event.data);
+                //changediv('#compiler_messages', e}; //event.data);
             }
 
             console.log('MessageFULL: %s', event.origin, "0 ", "1 ", input_message.data, "2 ", event.data, "3 ", event.action);
             console.log('Message: %s', input_message.data);
-            //let messageElem = document.createElement('div');
-            //messageElem.textContent = message;
-            //document.getElementById('compiler_messages').value = message;
-            //document.getElementById('compiler_messages').prepend(messageElem);
         };
     }
 
