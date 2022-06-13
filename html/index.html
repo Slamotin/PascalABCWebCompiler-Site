@@ -147,13 +147,16 @@
         <div id="signin_result"></div>
     </form>
     <div class="root">
-        <form action="" method="post">
+        <form action="" method="post" onSubmit>
                 <input type="file" id="filename" />
                 <input type="text" id="fileNameFolder" />
                 <button type="button" id="changeFileNameButton" onClick="changeFileName(editAreaLoader.getCurrentFile(textEditorID))">Изменить имя файла</button>
                 <br />
                 <br />
                 <textarea class="textarea1" id="example_1" name="test_1"></textarea>
+                <p>
+                    <input type="button" onclick='sendCode("example_1");' value="Отправить" />
+                </p>
                 <div id="stdin_box">
                     <button type="button" id="enterInputText" onClick="toggleDisplay(stdInput); toggleName('enter input (stdin) -- show','enter input (stdin) -- hide',stdInput, enterInputText)"> enter input (stdin) -- hide</button>
                     <textarea id="stdInput" placeholder="Введите нужные данные перед отправкой на сервер"></textarea>
@@ -169,9 +172,6 @@
                     <input type='button' onclick='test_setSelectedText("example_1");' value='setSelectedText' />
                     <input type='button' onclick='editAreaLoader.insertTags("example_1", "[OPEN]", "[CLOSE]");' value='insertTags' />
                     <input type='button' onclick='toogle_editable("example_1");' value='Toggle readonly mode' />
-                </p>
-                <p>
-                    <input type="button" onclick='sendCode("example_1");' value="Отправить" />
                 </p>
 
                 <!-- div с сообщениями -->
