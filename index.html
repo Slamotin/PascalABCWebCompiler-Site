@@ -473,6 +473,59 @@
                                 openSample();
                                 my_save(textEditorID, '');
                             }
+
+                            let lessons = JSON.parse(input_message.lessons);
+                            lessons.rows.sort(function (n1, n2) {
+                                return n1.lesson_id - n2.lesson_id;
+                            })
+                            for (let oneLesson of lessons.rows) {
+                                if (oneLesson.lesson_id % 100 === 0) {
+                                    let br = document.createElement('br');
+                                    let h3 = document.createElement('h3');
+                                    h3.innerHTML = `${oneLesson.lesson_id / 100}. ` + oneLesson.topicname;
+                                    document.getElementById('lessons_nav').appendChild(h3);
+                                    document.getElementById('lessons_nav').appendChild(br);
+                                }
+                                else {
+                                    let br = document.createElement('br');
+                                    let a = document.createElement('a');
+                                    a.innerHTML = `${parseInt(oneLesson.lesson_id / 100)}.${oneLesson.lesson_id % 100}. ` + oneLesson.topicname;
+                                    a.href = '#' + a.innerText;
+                                    document.getElementById('lessons_nav').appendChild(a);
+                                    document.getElementById('lessons_nav').appendChild(br);
+
+                                    if (oneLesson.task == '' || oneLesson.task == null || oneLesson.task == undefined) {
+                                        let div = document.createElement('div');
+                                        div.innerHTML = '<a href="#"><span>&times;</span></a>';
+                                        div.id = a.innerText;
+                                        div.className = 'popUpWindow';
+                                        let p = document.createElement('p');
+                                        p.innerHTML = oneLesson.lessontext;
+                                        div.appendChild(p);
+                                        document.body.prepend(div);
+                                    } else {
+                                        let div = document.createElement('div');
+                                        div.innerHTML = '<a href="#"><span>&times;</span></a>';
+                                        div.className = 'selectedTask';
+                                        for (let iter of JSON.parse(input_message.tasks).rows)
+                                            if (iter.task_id === oneLesson.task) {
+                                                div.id = a.innerText;
+                                                let p = document.createElement('p');
+                                                let description = iter.Description;
+                                                p.innerHTML = description;
+                                                div.append(p);
+                                            }
+                                        /*let checkTaskButton = document.createElement('button');
+                                        checkTaskButton.id = oneLesson.lesson_id;
+                                        checkTaskButton.className = "selectedTaskButton";
+                                        checkTaskButton.addEventListener(onclick, checkTask);
+                                        checkTaskButton.innerText = "Проверить задание";
+
+                                        stdin_box.before(checkTaskButton);*/
+                                        task_area.append(div);
+                                    }
+                                }
+                            }
                             //readOpenedFiles();
                             checkLocalStorage();
                             break;
