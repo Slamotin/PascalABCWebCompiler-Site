@@ -1,3 +1,7 @@
+body{
+    background-color: lightblue;
+/*    position: absolute;*/
+}
 .textarea1{
 /*	height: 350px; */
 	width: 100%;
@@ -7,28 +11,35 @@
 	margin-left: 15px;
 	margin-bottom: 15px;
 }
+
 #files_side{
-    display: block;
-    margin-left: 20px;
-    margin-top: 30px;
+/*    display: flex;*/
+    height: 100%;
+    width: 100%;
+    padding-left: 20px;
+    padding-top: 30px;
     grid-area: auto;
     right: 0px;
-    z-index: top;
-    position: relative;
+/*    z-index: top;*/
+/*    position: relative;*/
     justify-content: space-evenly;
     align-items: flex-start;
 /*    position: fixed;*/
     /*background-color: gray;*/
 }
 #file_list{
-    display: block;
-    min-height: inherit;
-    min-width: 150px;
-    max-width: inherit;
+    display: flex;
+    min-height: 75%;
+    min-width: 75%;
 }
-.root {
+.editor_area {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+/*    position: sticky;*/
+    grid-template-columns: 0.5fr 1fr 0.5fr;
+    width: 100%;
+/*    justify-content: center;*/
+/*    align-items: center;*/
+    
 }
 
 #compiler_answers {
@@ -52,14 +63,19 @@
     color: #333;
     display: flex;
 }
-
+*{
+    margin:0;
+    padding:0;
+}
 .topnav {
     display: flex;
+    
+    width: 100%;
     float: left;
     background-color: #333;
-    position: fixed;
+/*    position: fixed;*/
     align-items: center;
-    padding: inherit;
+    padding: 25px;
 }
 .topnav a{
     float: left;
@@ -146,8 +162,152 @@
     box-sizing: border-box;
     margin-bottom: 0px;
     color: #333;
+    transition: 1s;
 }
 
 #enterInputText {
     margin-bottom: 5px;
+}
+
+#signin_result {
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+#file_form {
+    overflow: auto;
+}
+
+#user_container {
+    width: 80%;
+    min-width: 150px;
+    margin-left: 5px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+
+.popUpWindow {
+    position: absolute;
+    background: #fff;
+    width: 82%;
+    min-width: 300px;
+    min-height: 300px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    padding: 20px;
+    box-shadow: 0 12px 20px -10px;
+/*    text-align: center;*/
+    z-index: 2;
+    overflow: scroll;
+    max-height: 80%;
+    display: none;
+}
+
+.popUpWindow span{
+    position: absolute;
+    font-size: 30px;
+    top: -6px;
+    right: 5px;
+    cursor: pointer;
+}
+
+.popUpWindow p{
+    white-space: pre-wrap;
+}
+
+.braces {
+  position: relative;
+  padding: .3em .5em;
+  margin-left: 1em;
+}
+.braces::before,
+.braces::after,
+.curly::before,
+.curly::after {
+  content: "";
+  position:absolute;
+  width: .8em;
+  height: 25%;
+}
+.braces::before,
+.braces::after {
+  left: 0;
+  border-left: 2px solid;
+}
+.braces::before {
+  top: 0;
+  border-top-left-radius: .8em;
+}
+.braces::after {
+  bottom: 0;
+  border-bottom-left-radius: .8em;
+}
+.curly::before,
+.curly::after {
+  left: -.8em;
+  border-right: 2px solid;
+}
+.curly::before {
+  top: 25%;
+  border-bottom-right-radius: .8em;
+}
+.curly::after {
+  bottom: 25%;
+  border-top-right-radius: .8em;
+}
+
+.overlay {
+    width: 100%;
+    height: 100%;
+    background: rgba(51, 51, 51, 0.78);
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none;
+}
+
+.topnav_links {
+/*    position: absolute;*/
+    right: 5px;
+    margin-right: 55px;
+}
+
+.selectedTask{
+    display: none;
+}
+#checkTaskButton{
+    display: inline;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.selectedTask:target {
+    display: block;
+}
+/*
+.selectedTask:target ~ .selectedTaskButton{
+    display: block;
+    
+}
+*/
+.selectedTaskButton:target {
+    display: block;
+}
+
+body .popUpWindow:target {
+    display: block;
+}
+body .popUpWindow:target + .overlay {
+    display: block;
+}
+body .popUpWindow:target ~ .overlay {
+    display: block;
+}
+
+.task_area {
+    display: grid;
+/*    position: sticky;*/
+    grid-template-columns: 0.5fr 1fr 0.5fr;
 }

@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width" />
     <title>Pascal WEB Compiler Prototype</title>
     <script type="text/javascript" src="edit_area/edit_area_full.js"></script>
     <!--<script type="text/javascript" src="../PascalWEBCompiler/edit_area/edit_area_full.js"></script>-->
@@ -33,18 +34,18 @@
         var textEditorID = "example_1";
 
         // callback functions
-        
-        function showFileName(fileInfo){
+
+        function showFileName(fileInfo) {
             fileNameFolder.value = fileInfo.title.split('.')[0];
-            
+
             deselectAllFiles();
-            for (let i of file_list.options){
-                if (i.value == fileInfo.title){
+            for (let i of file_list.options) {
+                if (i.value == fileInfo.title) {
                     i.selected = true;
                     break;
-                }    
+                }
             }
-            
+
         }
         function my_save(id, textarea_content) {
             let code = this.editAreaLoader.getCurrentFile(textEditorID);
@@ -63,24 +64,6 @@
             sessionStorage.setItem(code.title, JSON.stringify(code));
         }
 
-        function test_setSelectionRange(id) {
-            editAreaLoader.setSelectionRange(id, 100, 150);
-        }
-
-        function test_getSelectionRange(id) {
-            var sel = editAreaLoader.getSelectionRange(id);
-            alert("start: " + sel["start"] + "\nend: " + sel["end"]);
-        }
-
-        function test_setSelectedText(id) {
-            text = "[REPLACED SELECTION]";
-            editAreaLoader.setSelectedText(id, text);
-        }
-
-        function test_getSelectedText(id) {
-            alert(editAreaLoader.getSelectedText(id));
-        }
-
         function editAreaLoaded(id) {
             //open_file1(id);
             for (let iter = 0; iter < sessionStorage.length; iter++) {
@@ -92,18 +75,552 @@
             let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.' };
             editAreaLoader.openFile(textEditorID, new_file);
         }
-        
-        function toogle_editable(id) {
-            editAreaLoader.execCommand(id, 'set_editable', !editAreaLoader.execCommand(id, 'is_editable'));
-        }
+
     </script>
-    
+    <script type="text/javascript">
+        function getCookie(name) {
+            let matches = document.cookie.match(new RegExp(
+                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+        // Пример использования:
+        //setCookie('user', 'John', {secure: true, 'max-age': 3600});
+        function setCookie(name, value, options = {}) {
+            options = {
+                path: '/',
+                // при необходимости добавьте другие значения по умолчанию
+                ...options
+            };
+
+            if (options.expires instanceof Date) {
+                options.expires = options.expires.toUTCString();
+            }
+
+            let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+            for (let optionKey in options) {
+                updatedCookie += "; " + optionKey;
+                let optionValue = options[optionKey];
+                if (optionValue !== true) {
+                    updatedCookie += "=" + optionValue;
+                }
+            }
+            document.cookie = updatedCookie;
+        }
+
+        function getRealDisplay(elem) {
+            if (elem.currentStyle) {
+                return elem.currentStyle.display
+            } else if (window.getComputedStyle) {
+                var computedStyle = window.getComputedStyle(elem, null)
+
+                return computedStyle.getPropertyValue('display')
+            }
+        }
+        function hide(el) {
+            if (!el.getAttribute('displayOld')) {
+                el.setAttribute("displayOld", el.style.display)
+            }
+
+            el.style.display = "none"
+        }
+        displayCache = {}
+        function isHidden(el) {
+            var width = el.offsetWidth, height = el.offsetHeight,
+                tr = el.nodeName.toLowerCase() === "tr"
+
+            return width === 0 && height === 0 && !tr ?
+                true : width > 0 && height > 0 && !tr ? false : getRealDisplay(el)
+        }
+        function toggleDisplay(el) {
+            isHidden(el) ? show(el) : hide(el)
+        }
+        function toggleName(showName, hideName, toggledElemID, changedElemID) {
+            isHidden(toggledElemID) ? changedElemID.innerText = showName : changedElemID.innerText = hideName;
+        }
+        function show(el) {
+
+            if (getRealDisplay(el) != 'none') return
+
+            var old = el.getAttribute("displayOld");
+            el.style.display = old || "";
+
+            if (getRealDisplay(el) === "none") {
+                var nodeName = el.nodeName, body = document.body, display
+
+                if (displayCache[nodeName]) {
+                    display = displayCache[nodeName]
+                } else {
+                    var testElem = document.createElement(nodeName)
+                    body.appendChild(testElem)
+                    display = getRealDisplay(testElem)
+
+                    if (display === "none") {
+                        display = "block"
+                    }
+
+                    body.removeChild(testElem)
+                    displayCache[nodeName] = display
+                }
+
+                el.setAttribute('displayOld', display)
+                el.style.display = display
+            }
+        }
+
+        var messageQueue = [];
+        function trySend(jsonString) {
+            if (socket.readyState === 0 || socket.readyState === 2 || socket.readyState === 3) {
+                connectToServer();
+                messageQueue.push(jsonString);
+            } else {
+                socket.send(jsonString);
+            }
+            console.log("Send: " + jsonString)
+        }
+
+        function auth() {
+            trySend(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
+        };
+        function signup() {
+            trySend(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));
+        };
+        function changediv(elem, message) {
+            var changer = document.querySelector(elem);
+            changer.textContent = message;
+        };
+
+        function wsSendEcho(value) {
+            socket.send(JSON.stringify({ action: 'ECHO', data: '123' }));
+        };
+
+        function wsSendPing() {
+            socket.send(JSON.stringify({ action: 'PING' }));
+        };
+
+        // отправка сообщения из формы
+        function sendCode(event) {
+            changediv('#compiler_messages', 'Wait...');
+            let code = this.editAreaLoader.getCurrentFile(textEditorID);
+
+            trySend(JSON.stringify({ action: 'COMPILE_CODE', data: code.text, hash: getCookie("hash"), filename: code.title, stdin: stdInput.value, raw_string: code }));
+            //let filename = document.querySelector();
+            //alert('Message send');
+            //alert(outgoingMessage);
+            return;
+        };
+
+        function checkLocalStorage() {
+            for (let iter in this.editAreaLoader.getAllFiles(textEditorID)) {
+                if (localStorage.getItem(iter.title) != null) {
+                    this.editAreaLoader.openFile(textEditorID, JSON.parse(localStorage.getItem(iter.title)));
+                }
+            }
+        }
+
+        /*async function readOpenedFiles() {
+            trySend(JSON.stringify({ action: 'GET_OPENED_FILES', hash: getCookie('hash') }));
+        }*/
+
+        function addFileToFilelist(filename, raw_string) {
+            let contains = [];
+            for (let elem of document.getElementById('file_list').children) {
+                contains.push(elem.innerText)
+            }
+            //if (document.getElementById('file_list'))
+            if (!contains.includes(filename)) {
+                let newOptionNode = document.createElement('option');
+                newOptionNode.innerText = filename;
+                newOptionNode.ondblclick = function () { openFileBySelect(this.innerText); };
+                //newOptionNode.addEventListener(ondblclick, openFileBySelect)
+                document.getElementById('file_list').appendChild(newOptionNode);
+            }
+
+            //sessionStorage.setItem(filename, raw_string);
+        }
+
+        function openFileBySelect(filename) {
+            if (file_list.selectedOptions[0] == undefined) {
+                //'No one selected file'
+                changediv('#compiler_messages', 'Не выбрано ни одного файла')
+            } else {
+                trySend(JSON.stringify({ action: 'GET_FILE', hash: getCookie('hash'), filename: filename }));
+            }
+        }
+
+        function getAllFiles() { //when we auth we get all files
+            trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
+        }
+
+        function openNewFile() {
+            let filename = 'new_file';
+            let number = 0;
+            let used_numbers = [];
+            for (let iter of file_list) {
+                let parsed_line = iter.innerText.split(/(\d+)/)
+                let n = parseInt(parsed_line[1])
+                if (parsed_line[0] == filename) {
+                    used_numbers.push(n);
+                }
+            };
+            while (true) {
+                let aaa = used_numbers.indexOf(number);
+                if (used_numbers.indexOf(number) != -1) {
+                    number++;
+                } else {
+                    break;
+                }
+            }
+            editAreaLoader.openFile(textEditorID, { id: filename + number + '.pas' })
+            my_save(textEditorID, '');
+            //setTimeout(()=>getAllFiles(), 1000);
+        }
+
+        function deleteFile(filename) {
+
+            if (file_list.selectedOptions[0] == undefined) {
+                //'No one selected file'
+                changediv('#compiler_messages', 'Не выбрано ни одного файла')
+            } else {
+                file_list.selectedOptions[0].remove()
+                trySend(JSON.stringify({ action: 'DELETE_FILE', hash: getCookie('hash'), filename: filename }));
+                this.editAreaLoader.closeFile(textEditorID, filename);
+            }
+        }
+
+        function changeFileName(fileAllInfo) {
+            let oldFileName = '';
+            let hash = getCookie('hash');
+            if (fileNameFolder.value != '') {
+                oldFileName = fileAllInfo.title;
+                fileAllInfo.id = fileNameFolder.value + '.pas';
+                fileAllInfo.title = fileNameFolder.value + '.pas';
+                trySend(JSON.stringify({ action: 'DELETE_FILE', hash: hash, filename: oldFileName }));
+                this.editAreaLoader.closeFile(textEditorID, oldFileName);
+                this.editAreaLoader.openFile(textEditorID, fileAllInfo);
+                my_save(textEditorID, '')
+            }
+        }
+
+        function deselectAllFiles() {
+            for (let i of file_list.options) {
+                i.selected = false;
+            }
+        }
+
+        function checkTask(button) {
+            console.log('button id: ' + button.id);
+
+            let task_id = location.hash.replace('#', '').split('.');
+            if (parseInt(task_id) && parseInt(task_id[1])) {
+                task_id = parseInt(task_id[0]) * 100 + parseInt(task_id[1]);
+                let code = this.editAreaLoader.getCurrentFile(textEditorID);
+                trySend(JSON.stringify({
+                    action: 'CHECK_TASK'
+                    , data: code.text
+                    , hash: getCookie("hash")
+                    , filename: code.title
+                    , stdin: stdInput.value
+                    , raw_string: code
+                    , task_id: task_id
+                }));
+            } else {
+                addTextToTextarea(compiler_answers, 'Задание не выбрано');
+            }
+        }
+
+        function addTextToTextarea(textAreaID, text) {
+            textAreaID.append(text + '\n');
+            textAreaID.scrollTop = textAreaID.scrollHeight;
+        }
+
+        function popUpOverlayWindowHide(elem) {
+            hide(mainPopUpWindow);
+            hide(document.getElementsByClassName('overlay')[0]);
+        }
+
+        var socket;
+        var input_message;
+        function connectToServer() {
+            socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
+            var form = document.forms['form'];
+            let auth_hash = getCookie('hash');
+
+            socket.onopen = function () {
+                console.log('подключился');
+                while (messageQueue.length > 0) {
+                    socket.send(messageQueue.pop());
+                }
+            };
+
+            socket.onclose = function (event) {
+                if (event.wasClean) {
+                    //alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+                    changediv('#compiler_messages', 'Соединение закрыто чисто')
+                } else {
+                    // например, сервер убил процесс или сеть недоступна
+                    // обычно в этом случае event.code 1006
+                    //alert('[close] Соединение прервано');
+                    changediv('#compiler_messages', 'Соединение с сервером оборвано')
+                }
+            };
+
+            socket.onerror = function (error) {
+                alert(`[error] ${error.message}`);
+            };
+
+            socket.onmessage = function (event) {
+                try {
+                    input_message = JSON.parse(event.data);
+                    switch (input_message.action) {
+                        case 'HELLO':
+                            changediv('#compiler_messages', input_message.data);
+                            getCookie('hash') === undefined ? socket.send(JSON.stringify({ action: 'NEW_GUEST' })) : socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
+                            break;
+                        case 'AUTH_OK': {
+                            //change auth_form
+                            let a = document.createElement('a');
+                            a.innerText = 'Привет, ' + input_message.nickname.nickname;
+                            //a.margin
+                            auth_form.after(a);
+                            auth_form.remove();
+                            //change file_form
+                            let files = JSON.parse(input_message.files);
+                            if (files.rows[0] != null) {
+                                for (let f of files.rows) {
+                                    addFileToFilelist(f.filename, f.raw_string);
+                                }
+                                deselectAllFiles();
+                                file_list.lastElementChild.selected = true;
+                                openFileBySelect(file_list.value);
+                            } else {
+                                openSample();
+                                my_save(textEditorID, '');
+                            }
+
+                            let lessons = JSON.parse(input_message.lessons);
+                            lessons.rows.sort(function (n1, n2) {
+                                return n1.lesson_id - n2.lesson_id;
+                            })
+                            for (let oneLesson of lessons.rows) {
+                                if (oneLesson.lesson_id % 100 === 0) {
+                                    let br = document.createElement('br');
+                                    let h3 = document.createElement('h3');
+                                    h3.innerHTML = `${oneLesson.lesson_id / 100}. ` + oneLesson.topicname;
+                                    document.getElementById('lessons_nav').appendChild(h3);
+                                    document.getElementById('lessons_nav').appendChild(br);
+                                }
+                                else {
+                                    let br = document.createElement('br');
+                                    let a = document.createElement('a');
+                                    a.innerHTML = `${parseInt(oneLesson.lesson_id / 100)}.${oneLesson.lesson_id % 100}. ` + oneLesson.topicname;
+                                    a.href = '#' + a.innerText;
+                                    document.getElementById('lessons_nav').appendChild(a);
+                                    document.getElementById('lessons_nav').appendChild(br);
+
+                                    if (oneLesson.task == '' || oneLesson.task == null || oneLesson.task == undefined) {
+                                        let div = document.createElement('div');
+                                        div.innerHTML = '<a href="#"><span>&times;</span></a>';
+                                        div.id = a.innerText;
+                                        div.className = 'popUpWindow';
+                                        let p = document.createElement('p');
+                                        p.innerHTML = oneLesson.lessontext;
+                                        div.appendChild(p);
+                                        document.body.prepend(div);
+                                    } else {
+                                        let div = document.createElement('div');
+                                        div.innerHTML = '<a href="#"><span>&times;</span></a>';
+                                        div.className = 'selectedTask';
+                                        for (let iter of JSON.parse(input_message.tasks).rows)
+                                            if (iter.task_id === oneLesson.task) {
+                                                div.id = a.innerText;
+                                                let p = document.createElement('p');
+                                                let description = iter.Description;
+                                                p.innerHTML = description;
+                                                div.append(p);
+                                            }
+                                        /*let checkTaskButton = document.createElement('button');
+                                        checkTaskButton.id = oneLesson.lesson_id;
+                                        checkTaskButton.className = "selectedTaskButton";
+                                        checkTaskButton.addEventListener(onclick, checkTask);
+                                        checkTaskButton.innerText = "Проверить задание";
+
+                                        stdin_box.before(checkTaskButton);*/
+                                        task_area.append(div);
+                                    }
+                                }
+                            }
+                            //readOpenedFiles();
+                            checkLocalStorage();
+                            break;
+                        }
+
+                        case 'GUEST_AUTH_OK': {
+                            //change file_form
+                            while (file_list.firstElementChild) {
+                                file_list.firstElementChild.remove()
+                            }
+                            let files = JSON.parse(input_message.files);
+                            if (files.rows[0] != null) {
+                                for (let f of files.rows) {
+                                    addFileToFilelist(f.filename, f.raw_string);
+                                }
+                                deselectAllFiles();
+                                file_list.lastElementChild.selected = true;
+                                openFileBySelect(file_list.value);
+                            } else {
+                                openSample();
+                                my_save(textEditorID, '');
+                            }
+                            //readOpenedFiles();
+                            checkLocalStorage();
+                            break;
+                        }
+                        case 'NEW_GUEST_REGISTRATION_OK':
+                            setCookie('hash', input_message.hash, { 'max-age': 86400 });
+                            //open sample file
+                            openSample();
+                            my_save(textEditorID, '');
+                            trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
+                            break;
+
+                        case 'LOGIN_CORRECT':
+                            //document.getElementById('auth_form').delete;
+                            if (document.getElementById("saveMyAuth").checked) {
+                                //renew cookie lifetime
+                                setCookie('hash', input_message.hash, { 'max-age': 31536000 });
+                            } else {
+                                //save hash only in session
+                                setCookie('hash', input_message.hash);
+                            }
+                            toggleDisplay(auth_form);
+
+                            //read from server opened files
+                            //readOpenedFiles();
+                            //read local storage
+                            checkLocalStorage();
+                            break;
+
+                        case 'LOGIN_INCORRECT':
+                            //'Login or password incorrect'
+                            changediv('#signin_result', 'Неправльные логин и/или пароль')
+                            document.getElementById('auth_form').reset();
+                            break;
+                        case 'TOKEN_NOT_VALID': {
+                            //delete hash
+                            setCookie('hash', '', { 'max-age': -1 })
+                            //'Your token not valid or expired, please refresh page or use sign in form'
+                            changediv('#compiler_messages', 'Ваш токен аутентификации недействителен, перезагрузите страницу. ')
+                            break;
+                        }
+                        case 'SIGNUP_LOGIN_USED':
+                            //.nickname'This login already in use'
+                            changediv('#signin_result', 'Данный логин уже используется')
+                            document.getElementById('auth_form').reset();
+                            break;
+
+                        case 'SIGNUP_SUCCESSFUL':
+                            //document.cookie set JSON.parse(event.data).hash
+                            //socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
+                            //setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
+
+                            //'Registration complete! Now you can enter to account.'
+                            changediv('#signin_result', 'Регистрация прошла успешно. Авторизуйтесь по Вашему логину и паролю');
+                            break;
+
+                        case 'SAVE_FILE_OK': {
+                            addTextToTextarea(compiler_answers, input_message.data);
+                            localStorage.removeItem(input_message.filename);
+                            break;
+                        }
+
+                        case 'TAKE_FILE': {
+                            let file = JSON.parse(input_message.raw_string)
+                            console.log('File: ' + file.rows[0].raw_string)
+                            console.log('Take file: ' + JSON.parse(file.rows[0].raw_string).title);
+                            editAreaLoader.openFile(textEditorID, JSON.parse(file.rows[0].raw_string));
+                            break;
+                        }
+
+                        case 'DELETE_SUCCESSFUL': {
+                            //'Delete completed'
+                            addTextToTextarea(compiler_answers, 'Файл удалён успешно')
+                            break;
+                        }
+
+                        /*case 'GET_OPENED_FILES_OK': {
+                            //open all files in resolve
+                            let res = JSON.parse(input_message.data);
+                            for (let i of res) {
+                                this.editAreaLoader.openFile(textEditorID, res.raw_string)
+                            }
+                            break;
+                        }
+
+                        case 'NO_OPENED_FILES': {
+                            //what name set for new file?
+                            this.editAreaLoader.openFile(textEditorID, { id: 'new_file.pas', title: 'new_file.pas', text: '//new file'})
+                            //open new file
+                            break;
+                        }*/
+
+                        case 'COMPILER_ANSWER': {
+                            addTextToTextarea(compiler_answers, input_message.data);
+                            changediv('#compiler_messages', '');
+                            break;
+                        };
+                        case 'TASK_COMPLETE_ANSWER': {
+                            addTextToTextarea(compiler_answers, input_message.data);
+                        }
+
+
+
+                    }
+                } catch (e) {
+                    console.log(`Error: ${e}`);
+                    //changediv('#compiler_messages', e}; //event.data);
+                }
+
+                console.log('MessageFULL: %s', event.origin, "0 ", "1 ", input_message.data, "2 ", event.data, "3 ", event.action);
+                console.log('Message: %s', input_message.data);
+            };
+        }
+
+        connectToServer();
+    </script>
     <link href="index.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <!--
-        <header class="topnav">
-            <h1>Pascal WEB Compiler</h1>
+    <div id="mainPopUpWindow" class="popUpWindow">
+        <a>qqqqqqq</a>
+        <h3>Оставьте свой Email, чтобы не пропускать новых выпусков</h3>
+        <form>
+            <input type="email" placeholder="Введите email" name="email-popup" />
+            <input type="button" name="btn-form-popup" value="Отправить" />
+        </form>
+        <a href="#"><span>&times;</span></a>
+    </div>
+    <div id="create_new_lesson" class="popUpWindow">
+        <a href="#"><span>&times;</span></a>
+        <form >
+            <a>Выбор раздела</a> <br>
+            <select id="lesson_chapters" ></select>
+            <a>Номер темы</a><br>
+            <input id="lesson_number" placeholder="Вводить в виде десятичного числа \nнапример 1.1 это 101, 2.9 это 209, а 3.15 это 315"/><br>
+            <a>Название темы</a><br>
+            <input id="lesson_header"/><br>
+            <a>Текст темы</a><br>
+            <input id="lesson_descr"/><br>
+        </form>
+        
+    </div>
+    <div class="overlay"></div>
+
+    <header class="topnav">
+        <a href="/"><h1>Pascal WEB Compiler</h1></a>
+        <div class="topnav_links">
+            <a href="#create_new_lesson"> Создать новый урок</a>
             <a href="#home" class="active">Home</a>
             <button class="user_menu">
                 Login or Sign Up
@@ -115,22 +632,18 @@
             </div>
             <a href="#news">News</a>
             <div class="dropdown">
-              <button class="dropbtn">Dropdown</button>
-              <div class="dropdown-content">
+                <button class="dropbtn">Dropdown</button>
+                <div class="dropdown-content">
                     <a href="#">Link 1</a>
                     <a href="#">Link 2</a>
                     <a href="#">Link 3</a>
-              </div>
+                </div>
             </div>
-        </header>
-        <br />
-        <br />
-        <nav>
-            <menu>
-                <li> <a>Заголовок 1</a> <a>Заголовок 2</a> </li>
-            </menu>
-        </nav>
-    -->
+        </div>
+    </header>
+    <br />
+    <br />
+    <button type="button" onClick="popUpOverlayWindowHide(this)">asdfsdf</button>
 
     <form id="auth_form" onSubmit="auth();return false">
         <input id="username" name="username" placeholder="Имя пользователя" />
@@ -143,39 +656,36 @@
         <br />
         <div><input type="checkbox" id="saveMyAuth" /><label for="saveMyAuth">Запомнить меня</label></div>
         <br />
+        <div id="signin_result"> </div>
         <br />
-        <div id="signin_result"></div>
     </form>
-    <div class="root">
-        <form action="" method="post" onSubmit>
-                <input type="file" id="filename" />
-                <input type="text" id="fileNameFolder" />
-                <button type="button" id="changeFileNameButton" onClick="changeFileName(editAreaLoader.getCurrentFile(textEditorID))">Изменить имя файла</button>
-                <br />
-                <br />
-                <textarea class="textarea1" id="example_1" name="test_1"></textarea>
-                <p>
-                    <input type="button" onclick='sendCode("example_1");' value="Отправить" />
-                </p>
-                <div id="stdin_box">
-                    <button type="button" id="enterInputText" onClick="toggleDisplay(stdInput); toggleName('enter input (stdin) -- show','enter input (stdin) -- hide',stdInput, enterInputText)"> enter input (stdin) -- hide</button>
-                    <textarea id="stdInput" placeholder="Введите нужные данные перед отправкой на сервер"></textarea>
-</div>
-                <textarea id="compiler_answers" readonly="readonly" placeholder="Здесь будет отображаться ответ компилятора"></textarea>
-                <p>
-                    Custom controls: <br />
-                    <input type='button' onclick='alert(editAreaLoader.getValue("example_1"));' value='get value' />
-                    <input type='button' onclick='editAreaLoader.setValue("example_1", "new_value");' value='set value' />
-                    <input type='button' onclick='test_getSelectionRange("example_1");' value='getSelectionRange' />
-                    <input type='button' onclick='test_setSelectionRange("example_1");' value='setSelectionRange' />
-                    <input type='button' onclick='test_getSelectedText("example_1");' value='getSelectedText' />
-                    <input type='button' onclick='test_setSelectedText("example_1");' value='setSelectedText' />
-                    <input type='button' onclick='editAreaLoader.insertTags("example_1", "[OPEN]", "[CLOSE]");' value='insertTags' />
-                    <input type='button' onclick='toogle_editable("example_1");' value='Toggle readonly mode' />
-                </p>
+    <div id="task_area" class="task_area">
+        <div></div>
+    </div>
+    <div class="editor_area">
+        <div id="user_container">
+            <h3>Теория и задания</h3>
+            <nav id="lessons_nav"></nav>
+        </div>
+        <form action="" method="post" onSubmit="sendCode('example_1');">
+            <input type="file" id="filename" />
+            <input type="text" id="fileNameFolder" />
+            <button type="button" id="changeFileNameButton" onClick="changeFileName(editAreaLoader.getCurrentFile(textEditorID))">Изменить имя файла</button>
+            <br />
+            <br />
+            <textarea class="textarea1" id="example_1" name="test_1"></textarea>
+            <p>
+                <input type="button" onclick='sendCode("example_1");' value="Отправить" />
+                <input id="checkTaskButton" type="button" onClick="checkTask(this);" value="Проверить задание" />
+            </p>
+            <div id="stdin_box">
+                <button type="button" id="enterInputText" onClick="toggleDisplay(stdInput); toggleName('enter input (stdin) -- show','enter input (stdin) -- hide',stdInput, enterInputText)"> enter input (stdin) -- hide</button>
+                <textarea id="stdInput" placeholder="Введите нужные данные перед отправкой на сервер"></textarea>
+            </div>
+            <textarea id="compiler_answers" readonly="readonly" placeholder="Здесь будет отображаться ответ компилятора"></textarea>
 
-                <!-- div с сообщениями -->
-                <div id="compiler_messages"></div>
+            <!-- div с сообщениями -->
+            <div id="compiler_messages"></div>
         </form>
         <aside id="files_side">
             <h2>Файлы</h2>
@@ -190,445 +700,5 @@
         </aside>
     </div>
 </body>
-<script>
-    function getCookie(name) {
-        let matches = document.cookie.match(new RegExp(
-            "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
-        ));
-        return matches ? decodeURIComponent(matches[1]) : undefined;
-    }
 
-    // Пример использования:
-    //setCookie('user', 'John', {secure: true, 'max-age': 3600});
-    function setCookie(name, value, options = {}) {
-        options = {
-            path: '/',
-            // при необходимости добавьте другие значения по умолчанию
-            ...options
-        };
-
-        if (options.expires instanceof Date) {
-            options.expires = options.expires.toUTCString();
-        }
-
-        let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-        for (let optionKey in options) {
-            updatedCookie += "; " + optionKey;
-            let optionValue = options[optionKey];
-            if (optionValue !== true) {
-                updatedCookie += "=" + optionValue;
-            }
-        }
-        document.cookie = updatedCookie;
-    }
-
-    function getRealDisplay(elem) {
-        if (elem.currentStyle) {
-            return elem.currentStyle.display
-        } else if (window.getComputedStyle) {
-            var computedStyle = window.getComputedStyle(elem, null)
-
-            return computedStyle.getPropertyValue('display')
-        }
-    }
-
-    function hide(el) {
-        if (!el.getAttribute('displayOld')) {
-            el.setAttribute("displayOld", el.style.display)
-        }
-
-        el.style.display = "none"
-    }
-
-    displayCache = {}
-
-    function isHidden(el) {
-        var width = el.offsetWidth, height = el.offsetHeight,
-            tr = el.nodeName.toLowerCase() === "tr"
-
-        return width === 0 && height === 0 && !tr ?
-            true : width > 0 && height > 0 && !tr ? false : getRealDisplay(el)
-    }
-
-    function toggleDisplay(el) {
-        isHidden(el) ? show(el) : hide(el)
-    }
-    function toggleName(showName, hideName, toggledElemID, changedElemID){
-        isHidden(toggledElemID) ? changedElemID.innerText = showName : changedElemID.innerText = hideName ;
-    }
-    function show(el) {
-
-        if (getRealDisplay(el) != 'none') return
-
-        var old = el.getAttribute("displayOld");
-        el.style.display = old || "";
-
-        if (getRealDisplay(el) === "none") {
-            var nodeName = el.nodeName, body = document.body, display
-
-            if (displayCache[nodeName]) {
-                display = displayCache[nodeName]
-            } else {
-                var testElem = document.createElement(nodeName)
-                body.appendChild(testElem)
-                display = getRealDisplay(testElem)
-
-                if (display === "none") {
-                    display = "block"
-                }
-
-                body.removeChild(testElem)
-                displayCache[nodeName] = display
-            }
-
-            el.setAttribute('displayOld', display)
-            el.style.display = display
-        }
-    }
-
-    var messageQueue = [];
-    function trySend(jsonString) {
-        if (socket.readyState === 0 ||socket.readyState === 2 || socket.readyState === 3) {
-            connectToServer();
-            messageQueue.push(jsonString);
-        } else {
-            socket.send(jsonString);
-        }
-        console.log("Send: " + jsonString)
-    }
-
-    function auth() {
-        trySend(JSON.stringify({ action: 'AUTH_LOGIN', login: auth_form.username.value, password: auth_form.password.value }));
-    };
-    function signup() {
-        trySend(JSON.stringify({ action: 'SIGNUP', login: auth_form.username.value, password: auth_form.password.value }));
-    };
-    function changediv(elem, message) {
-        var changer = document.querySelector(elem);
-        changer.textContent = message;
-    };
-
-    function wsSendEcho(value) {
-        socket.send(JSON.stringify({ action: 'ECHO', data: '123' }));
-    };
-
-    function wsSendPing() {
-        socket.send(JSON.stringify({ action: 'PING' }));
-    };
-
-    // отправка сообщения из формы
-    function sendCode(event) {
-        changediv('#compiler_messages', 'Wait...');
-        let code = this.editAreaLoader.getCurrentFile(textEditorID);
-
-        trySend(JSON.stringify({ action: 'COMPILE_CODE', data: code.text, hash: getCookie("hash"), filename: code.title, stdin: stdInput.value, raw_string: code }));
-        //let filename = document.querySelector();
-        //alert('Message send');
-        //alert(outgoingMessage);
-        return;
-    };
-
-    function checkLocalStorage() {
-        for (let iter in this.editAreaLoader.getAllFiles(textEditorID)) {
-            if (localStorage.getItem(iter.title) != null) {
-                this.editAreaLoader.openFile(textEditorID, JSON.parse(localStorage.getItem(iter.title)));
-            }
-        }
-    }
-
-    /*async function readOpenedFiles() {
-        trySend(JSON.stringify({ action: 'GET_OPENED_FILES', hash: getCookie('hash') }));
-    }*/
-
-    async function addFileToFilelist(filename, raw_string) {
-        let contains = [];
-        for (let elem of document.getElementById('file_list').children) {
-            contains.push(elem.innerText)
-        }
-        //if (document.getElementById('file_list'))
-        if (!contains.includes(filename)) {
-            let newOptionNode = document.createElement('option');
-            newOptionNode.innerText = filename;
-            newOptionNode.ondblclick = function () { openFileBySelect(this.innerText); };
-            //newOptionNode.addEventListener(ondblclick, openFileBySelect)
-            document.getElementById('file_list').appendChild(newOptionNode);
-        }
-
-        //sessionStorage.setItem(filename, raw_string);
-    }
-
-    function openFileBySelect(filename) {
-        if (file_list.selectedOptions[0] == undefined) {
-            //'No one selected file'
-            changediv('#compiler_messages', 'Не выбрано ни одного файла')
-        } else {
-            trySend(JSON.stringify({ action: 'GET_FILE', hash: getCookie('hash'), filename: filename }));
-        }
-    }
-
-    function getAllFiles() { //when we auth we get all files
-        trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
-    }
-
-    function openNewFile() {
-        let filename = 'new_file';
-        let number = 0;
-        let used_numbers = [];
-        for (let iter of file_list) {
-            let parsed_line = iter.innerText.split(/(\d+)/)
-            let n = parseInt(parsed_line[1])
-            if (parsed_line[0] == filename) {
-                used_numbers.push(n);
-            }
-        };
-        while (true) {
-            let aaa = used_numbers.indexOf(number);
-            if (used_numbers.indexOf(number) != -1) {
-                number++;
-            } else {
-                break;
-            }
-        }
-        editAreaLoader.openFile(textEditorID, { id: filename + number + '.pas' })
-        my_save(textEditorID, '');
-        //setTimeout(()=>getAllFiles(), 1000);
-    }
-
-    function deleteFile(filename) {
-
-        if (file_list.selectedOptions[0] == undefined) {
-            //'No one selected file'
-            changediv('#compiler_messages', 'Не выбрано ни одного файла')
-        } else {
-            file_list.selectedOptions[0].remove()
-            trySend(JSON.stringify({ action: 'DELETE_FILE', hash: getCookie('hash'), filename: filename }));
-            this.editAreaLoader.closeFile(textEditorID, filename);
-        }
-    }
-
-    function changeFileName(fileAllInfo) {
-        let oldFileName = '';
-        let hash = getCookie('hash');
-        if (fileNameFolder.value != '') {
-            oldFileName = fileAllInfo.title;
-            fileAllInfo.id = fileNameFolder.value + '.pas';
-            fileAllInfo.title = fileNameFolder.value + '.pas';
-            trySend(JSON.stringify({ action: 'DELETE_FILE', hash: hash, filename: oldFileName }));
-            this.editAreaLoader.closeFile(textEditorID, oldFileName);
-            this.editAreaLoader.openFile(textEditorID, fileAllInfo);
-            my_save(textEditorID, '')
-        }
-    }
-
-    function deselectAllFiles() {
-        for (let i of file_list.options) {
-            i.selected = false;
-        }
-    }
-
-    async function addTextToTextarea(textAreaID, text) {
-        textAreaID.append(text + '\n');
-        textAreaID.scrollTop = textAreaID.scrollHeight;
-    }
-
-    var socket1 = [];
-    async function testConnections(iterator) {
-        socket1[iterator] = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
-        socket1[iterator].onopen = function () {
-            const start = Date.now();
-            let outgoingMessage = editAreaLoader.getValue("example_1");
-            //socket1[iterator].send(JSON.stringify({ action: 'CODE', data: outgoingMessage, filename: iterator, hash: getCookie('hash')}));
-            socket1[iterator].send(JSON.stringify({ action: 'PING' }))
-            const duration = Date.now() - start;
-            console.log(`send ${iterator} packet with ${duration}`);
-        }
-    }
-
-    var socket;
-    var input_message;
-    async function connectToServer() {
-        socket = new WebSocket("wss://nodejs-webcompiler-server.herokuapp.com:443");
-        var form = document.forms['form'];
-        let auth_hash = getCookie('hash');
-
-        socket.onopen = function () {
-            console.log('подключился');
-            while (messageQueue.length > 0) {
-                socket.send(messageQueue.pop());
-            }
-        };
-
-        socket.onclose = function (event) {
-            if (event.wasClean) {
-                //alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
-                changediv('#compiler_messages', 'Соединение закрыто чисто')
-            } else {
-                // например, сервер убил процесс или сеть недоступна
-                // обычно в этом случае event.code 1006
-                //alert('[close] Соединение прервано');
-                changediv('#compiler_messages', 'Соединение с сервером оборвано')
-            }
-        };
-
-        socket.onerror = function (error) {
-            alert(`[error] ${error.message}`);
-        };
-
-        socket.onmessage = function (event) {
-            try {
-                input_message = JSON.parse(event.data);
-                switch (input_message.action) {
-                    case 'HELLO':
-                        changediv('#compiler_messages', input_message.data);
-                        getCookie('hash') === undefined ? socket.send(JSON.stringify({ action: 'NEW_GUEST' })) : socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
-                        break;
-                    case 'AUTH_OK': {
-                        //change auth_form
-                        let a = document.createElement('a');
-                        a.innerText = 'Привет, ' + input_message.nickname;
-                        //a.margin
-                        auth_form.after(a);
-                        auth_form.style.display == 'none';
-                        //change file_form
-                        let files = JSON.parse(input_message.files);
-                        if (files.rows[0] != null) {
-                            for (let f of files.rows) {
-                                addFileToFilelist(f.filename, f.raw_string);
-                            }
-                            deselectAllFiles();
-                            file_list.lastElementChild.selected = true;
-                            openFileBySelect(file_list.value);
-                        } else {
-                            openSample();
-                            my_save(textEditorID, '');
-                        }
-                        //readOpenedFiles();
-                        checkLocalStorage();
-                        break;
-                    }
-
-                    case 'GUEST_AUTH_OK': {
-                        //change file_form
-                        while(file_list.firstElementChild){
-                            file_list.firstElementChild.remove()
-                        }
-                        let files = JSON.parse(input_message.files);
-                        if (files.rows[0] != null) {
-                            for (let f of files.rows) {
-                                addFileToFilelist(f.filename, f.raw_string);
-                            }
-                            deselectAllFiles();
-                            file_list.lastElementChild.selected = true;
-                            openFileBySelect(file_list.value);
-                        } else {
-                            openSample();
-                            my_save(textEditorID, '');
-                        }
-                        //readOpenedFiles();
-                        checkLocalStorage();
-                        break;
-                    }
-                    case 'NEW_GUEST_REGISTRATION_OK':
-                        setCookie('hash', input_message.hash, { 'max-age': 86400 });
-                        //open sample file
-                        openSample();
-                        my_save(textEditorID, '');
-                        trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
-                        break;
-
-                    case 'LOGIN_CORRECT':
-                        //document.getElementById('auth_form').delete;
-                        if (document.getElementById("saveMyAuth").checked) {
-                            //renew cookie lifetime
-                            setCookie('hash', input_message.hash, { 'max-age': 31536000 });
-                        } else {
-                            //save hash only in session
-                            setCookie('hash', input_message.hash);
-                        }
-                        //read from server opened files
-                        //readOpenedFiles();
-                        //read local storage
-                        checkLocalStorage();
-                        break;
-
-                    case 'LOGIN_INCORRECT':
-                        //'Login or password incorrect'
-                        changediv('#signin_result', 'Неправльные логин и/или пароль')
-                        document.getElementById('auth_form').reset();
-                        break;
-                    case 'TOKEN_NOT_VALID': {
-                        //delete hash
-                        setCookie('hash', '', { 'max-age': -1 })
-                        //'Your token not valid or expired, please refresh page or use sign in form'
-                        changediv('#compiler_messages', 'Ваш токен аутентификации недействителен, перезагрузите страницу. ')
-                        break;
-                    }
-                    case 'SIGNUP_LOGIN_USED':
-                        //'This login already in use'
-                        changediv('#signin_result', 'Данный логин уже используется')
-                        document.getElementById('auth_form').reset();
-                        break;
-
-                    case 'SIGNUP_SUCCESSFUL':
-                        //document.cookie set JSON.parse(event.data).hash
-                        //socket.send(JSON.stringify({ action: 'AUTH_COOKIE', hash: JSON.parse(event.data).hash }));
-                        //setCookie('hash', JSON.parse(event.data).hash, { 'max-age': 31536000 })
-
-                        //'Registration complete! Now you can enter to account.'
-                        changediv('#signin_result', 'Регистрация прошла успешно. Авторизуйтесь по Вашему логину и паролю');
-                        break;
-
-                    case 'SAVE_FILE_OK': {
-                        addTextToTextarea(compiler_answers, input_message.data);
-                        localStorage.removeItem(input_message.filename);
-                        break;
-                    }
-
-                    case 'TAKE_FILE': {
-                        let file = JSON.parse(input_message.raw_string)
-                        console.log('File: ' + file.rows[0].raw_string)
-                        console.log('Take file: ' + JSON.parse(file.rows[0].raw_string).title);
-                        editAreaLoader.openFile(textEditorID, JSON.parse(file.rows[0].raw_string));
-                        break;
-                    }
-
-                    case 'DELETE_SUCCESSFUL': {
-                        //'Delete completed'
-                        addTextToTextarea(compiler_answers, 'Файл удалён успешно')
-                        break;
-                    }
-
-                    /*case 'GET_OPENED_FILES_OK': {
-                        //open all files in resolve
-                        let res = JSON.parse(input_message.data);
-                        for (let i of res) {
-                            this.editAreaLoader.openFile(textEditorID, res.raw_string)
-                        }
-                        break;
-                    }
-
-                    case 'NO_OPENED_FILES': {
-                        //what name set for new file?
-                        this.editAreaLoader.openFile(textEditorID, { id: 'new_file.pas', title: 'new_file.pas', text: '//new file'})
-                        //open new file
-                        break;
-                    }*/
-
-                    case 'COMPILER_ANSWER':
-                        addTextToTextarea(compiler_answers, input_message.data);
-                        changediv('#compiler_messages', '');
-                        break;
-                }
-            } catch (e) {
-                console.log(`Error: ${e}`);
-                //changediv('#compiler_messages', e}; //event.data);
-            }
-
-            console.log('MessageFULL: %s', event.origin, "0 ", "1 ", input_message.data, "2 ", event.data, "3 ", event.action);
-            console.log('Message: %s', input_message.data);
-        };
-    }
-
-    connectToServer();
-</script>
 </html>
