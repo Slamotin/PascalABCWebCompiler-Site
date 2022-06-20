@@ -72,8 +72,10 @@
         }
 
         function openSample() {
-            let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.' };
-            editAreaLoader.openFile(textEditorID, new_file);
+            setTimeout(() => {
+                let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.' };
+                editAreaLoader.openFile(textEditorID, new_file);
+            }, 1000)
         }
 
     </script>
