@@ -63,19 +63,28 @@ body{
     color: #333;
     display: flex;
 }
+
 *{
     margin:0;
     padding:0;
 }
 .topnav {
-    display: flex;
-    
+    display: flex;  
     width: 100%;
     float: left;
     background-color: #333;
 /*    position: fixed;*/
     align-items: center;
     padding: 25px;
+}
+
+.topnav button{
+    width: 100px;
+    display: inline;
+    padding: 5px;
+    margin-bottom: 5px;
+    background-color: lightblue;
+    border: none;
 }
 .topnav a{
     float: left;
@@ -85,15 +94,15 @@ body{
     padding: 14px 16px;
     text-decoration: none;
     font-size: 17px;
+    margin-right: 5px;
 }
 .topnav h1{
     display: block;
-    color: aqua;
-
+    color: lightblue;
     float: left;
 }
 .topnav a:hover {
-    background-color: #ddd;
+    background-color: darkslategray;
     color: black;
 }
 
@@ -310,4 +319,29 @@ body .popUpWindow:target ~ .overlay {
     display: grid;
 /*    position: sticky;*/
     grid-template-columns: 0.5fr 1fr 0.5fr;
+}
+
+#auth_form {
+    display: block;
+}
+
+#username {
+    background-color: lightblue;
+    padding: 5px;  
+    margin-bottom: 5px;
+    border: hidden;
+}
+
+#password {
+    background-color: lightblue;
+    padding: 5px;  
+    margin-bottom: 5px;
+    border: hidden;
+}
+
+#saveMyAuth {
+    margin-right: 5px;
+    background-color: lightblue;
+    color: lightblue;
+    border: none;
 }

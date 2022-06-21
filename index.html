@@ -674,6 +674,15 @@
 
     <header class="topnav">
         <a href="/"><h1>Pascal WEB Compiler</h1></a>
+        <form id="auth_form" onSubmit="auth();return false">
+        <input id="username" name="username" placeholder="Имя пользователя" /> 
+        <input id="password" name="password" type="password" placeholder="Пароль" />
+        <button type="submit" onClick="auth()">Вход</button>
+        <button type="button" onClick="signup()">Регистрация</button>
+        <div><input type="checkbox" id="saveMyAuth"/><label for="saveMyAuth" style="color:lightblue;">Запомнить меня</label></div>
+        <div id="signin_result"></div>
+    </form>
+<!--
         <div class="topnav_links">
             <a href="#create_new_lesson"> Создать новый урок</a>
             <a href="#home" class="active">Home</a>
@@ -695,25 +704,12 @@
                 </div>
             </div>
         </div>
+-->
     </header>
     <br />
     <br />
     <button type="button" onClick="popUpOverlayWindowHide(this)">asdfsdf</button>
 
-    <form id="auth_form" onSubmit="auth();return false">
-        <input id="username" name="username" placeholder="Имя пользователя" />
-        <br />
-        <br />
-        <input id="password" name="password" type="password" placeholder="Пароль" />
-        <button type="submit" onClick="auth()">Вход</button>
-        <button type="button" onClick="signup()">Регистрация</button>
-        <br />
-        <br />
-        <div><input type="checkbox" id="saveMyAuth" /><label for="saveMyAuth">Запомнить меня</label></div>
-        <br />
-        <div id="signin_result"> </div>
-        <br />
-    </form>
     <div id="task_area" class="task_area">
         <div></div>
     </div>
