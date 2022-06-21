@@ -597,6 +597,21 @@
                             editAreaLoader.openFile(textEditorID, JSON.parse(file.rows[0].raw_string));
                             break;
                         }
+                        
+                        case 'TAKE_ALL_FILES':{
+                            let files = JSON.parse(input_message.files);
+                            if (files.rows[0] != null) {
+                                for (let f of files.rows) {
+                                    addFileToFilelist(f.filename, f.raw_string);
+                                }
+                                deselectAllFiles();
+                                file_list.lastElementChild.selected = true;
+                                openFileBySelect(file_list.value);
+                            } else {
+                                openSample();
+                                my_save(textEditorID, '');
+                            }
+                        }
 
                         case 'DELETE_SUCCESSFUL': {
                             //'Delete completed'
