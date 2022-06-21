@@ -50,9 +50,9 @@
         function my_save(id, textarea_content) {
             let code = this.editAreaLoader.getCurrentFile(textEditorID);
             trySend(JSON.stringify({ action: "SAVE_FILE", data: code.text, hash: getCookie("hash"), filename: code.title, raw_string: code }));
-
             sessionStorage.removeItem(code.title);
             setTimeout(() => getAllFiles(), 1000);
+
         }
 
         function my_load(id) {
@@ -72,10 +72,8 @@
         }
 
         function openSample() {
-            setTimeout(() => {
                 let new_file = { id: "new_file0.pas", text: '//Simple example\nvar a,b,c:integer;\nbegin\n\ta:=2;\n\tb:=3;\n\tc:=4;\n\twriteln(sqr(a)+b*c);\nend.' };
                 editAreaLoader.openFile(textEditorID, new_file);
-            }, 1000)
         }
 
     </script>
@@ -252,7 +250,7 @@
         }
 
         function getAllFiles() { //when we auth we get all files
-            trySend(JSON.stringify({ action: 'AUTH_COOKIE', hash: getCookie('hash') }));
+            trySend(JSON.stringify({ action: 'GET_ALL_FILES', hash: getCookie('hash') }));
         }
 
         function openNewFile() {
@@ -276,7 +274,7 @@
             }
             editAreaLoader.openFile(textEditorID, { id: filename + number + '.pas' })
             my_save(textEditorID, '');
-            //setTimeout(()=>getAllFiles(), 1000);
+            setTimeout(()=>getAllFiles(), 1000);
         }
 
         function deleteFile(filename) {
