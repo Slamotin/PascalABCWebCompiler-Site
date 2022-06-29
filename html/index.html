@@ -398,7 +398,9 @@
                                 openSample();
                                 my_save(textEditorID, '');
                             }
-
+                            while (lessons_nav.firstElementChild) {
+                                lessons_nav.firstElementChild.remove()
+                            }
                             let lessons = JSON.parse(input_message.lessons);
                             lessons.rows.sort(function (n1, n2) {
                                 return n1.lesson_id - n2.lesson_id;
@@ -473,7 +475,9 @@
                                 openSample();
                                 my_save(textEditorID, '');
                             }
-
+                            while (lessons_nav.firstElementChild) {
+                                lessons_nav.firstElementChild.remove()
+                            }
                             let lessons = JSON.parse(input_message.lessons);
                             lessons.rows.sort(function (n1, n2) {
                                 return n1.lesson_id - n2.lesson_id;
@@ -721,7 +725,12 @@
     </header>
     <br />
     <br />
-    <button type="button" onClick="popUpOverlayWindowHide(this)">asdfsdf</button>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
 
     <div id="task_area" class="task_area">
         <div></div>
